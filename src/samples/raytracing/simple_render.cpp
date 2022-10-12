@@ -18,8 +18,6 @@ SimpleRender::SimpleRender(uint32_t a_width, uint32_t a_height) : m_width(a_widt
 
 void SimpleRender::SetupDeviceFeatures()
 {
-  if(ENABLE_HARDWARE_RT)
-  {
     // m_enabledDeviceFeatures.fillModeNonSolid = VK_TRUE;
     m_enabledRayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
     m_enabledRayQueryFeatures.rayQuery = VK_TRUE;
@@ -34,9 +32,6 @@ void SimpleRender::SetupDeviceFeatures()
     m_enabledAccelStructFeatures.pNext = &m_enabledDeviceAddressFeatures;
     
     m_pDeviceFeatures = &m_enabledAccelStructFeatures;
-  }
-  else
-    m_pDeviceFeatures = nullptr;
     
 }
 
@@ -44,19 +39,16 @@ void SimpleRender::SetupDeviceExtensions()
 {
   m_deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   
-  if(ENABLE_HARDWARE_RT)
-  {
-    m_deviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-    m_deviceExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-    // Required by VK_KHR_acceleration_structure
-    m_deviceExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-    m_deviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-    m_deviceExtensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
-    // Required by VK_KHR_ray_tracing_pipeline
-    m_deviceExtensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
-    // Required by VK_KHR_spirv_1_4
-    m_deviceExtensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
-  }
+  m_deviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+  m_deviceExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+  // Required by VK_KHR_acceleration_structure
+  m_deviceExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+  m_deviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+  m_deviceExtensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+  // Required by VK_KHR_ray_tracing_pipeline
+  m_deviceExtensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
+  // Required by VK_KHR_spirv_1_4
+  m_deviceExtensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
 }
 
 void SimpleRender::GetRTFeatures()
@@ -113,16 +105,11 @@ void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_inst
   LoaderConfig conf = {};
   conf.load_geometry = true;
   conf.load_materials = MATERIAL_LOAD_MODE::NONE;
-  if(ENABLE_HARDWARE_RT)
-  {
-    conf.build_acc_structs = true;
-    conf.build_acc_structs_while_loading_scene = true;
-    conf.builder_type = BVH_BUILDER_TYPE::RTX;
-  }
+  conf.build_acc_structs = true;
+  conf.build_acc_structs_while_loading_scene = true;
+  conf.builder_type = BVH_BUILDER_TYPE::RTX;
 
   m_pScnMgr = std::make_shared<SceneManager>(m_device, m_physicalDevice, m_queueFamilyIDXs.graphics, m_pCopyHelper, conf);
-//  m_pScnMgr = std::make_shared<SceneManager>(m_device, m_physicalDevice, m_queueFamilyIDXs.transfer,
-//                                             m_queueFamilyIDXs.graphics, ENABLE_HARDWARE_RT);
 
 }
 
@@ -401,7 +388,6 @@ void SimpleRender::RecreateSwapChain()
 
   // *** ray tracing resources
   m_raytracedImageData.resize(m_width * m_height);
-  m_pRayTracerCPU = nullptr;
   m_pRayTracerGPU = nullptr;
   SetupRTImage();
   SetupQuadRenderer();
@@ -420,9 +406,9 @@ void SimpleRender::ProcessInput(const AppInput &input)
   if(input.keyPressed[GLFW_KEY_B])
   {
 #ifdef WIN32
-    std::system("cd ../resources/shaders && python compile_simple_render_shaders.py");
+    std::system("cd ../../resources/shaders && python compile_simple_render_shaders.py");
 #else
-    std::system("cd ../resources/shaders && python3 compile_simple_render_shaders.py");
+    std::system("cd ../../resources/shaders && python3 compile_simple_render_shaders.py");
 #endif
 
     SetupSimplePipeline();
@@ -467,15 +453,8 @@ void SimpleRender::UpdateView()
 void SimpleRender::LoadScene(const char* path)
 {
   m_pScnMgr->LoadScene(path);
-  if(ENABLE_HARDWARE_RT)
-  {
-    m_pScnMgr->BuildAllBLAS();
-    m_pScnMgr->BuildTLAS();
-  }
-  else
-  {
-    SetupRTScene();
-  }
+  m_pScnMgr->BuildAllBLAS();
+  m_pScnMgr->BuildTLAS();
 
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
     {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1},
@@ -520,10 +499,7 @@ void SimpleRender::DrawFrameSimple()
   }
   else if(m_currentRenderMode == RenderMode::RAYTRACING)
   {
-    if (ENABLE_HARDWARE_RT)
-      RayTraceGPU();
-    else
-      RayTraceCPU();
+    RayTraceGPU();
 
     BuildCommandBufferQuad(currentCmdBuf, m_swapchain.GetAttachment(imageIdx).view);
   }
@@ -649,7 +625,6 @@ void SimpleRender::Cleanup()
     m_colorMem = VK_NULL_HANDLE;
   }
 
-  m_pRayTracerCPU = nullptr;
   m_pRayTracerGPU = nullptr;
 
   m_pBindings = nullptr;
@@ -735,10 +710,7 @@ void SimpleRender::DrawFrameWithGUI()
   }
   else if(m_currentRenderMode == RenderMode::RAYTRACING)
   {
-    if (ENABLE_HARDWARE_RT)
       RayTraceGPU();
-    else
-      RayTraceCPU();
 
     BuildCommandBufferQuad(currentCmdBuf, m_swapchain.GetAttachment(imageIdx).view);
   }

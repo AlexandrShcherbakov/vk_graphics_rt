@@ -29,15 +29,14 @@ class RayTracer_GPU : public RayTracer_Generated
 {
 public:
   RayTracer_GPU(int32_t a_width, uint32_t a_height) : RayTracer_Generated(a_width, a_height) {} 
-  std::string AlterShaderPath(const char* a_shaderPath) override { return std::string("../src/samples/raytracing/") + std::string(a_shaderPath); }
+  std::string AlterShaderPath(const char* a_shaderPath) override { return std::string("../../src/samples/raytracing/") + std::string(a_shaderPath); }
 };
 
 class SimpleRender : public IRender
 {
 public:
-  const std::string VERTEX_SHADER_PATH   = "../resources/shaders/simple.vert";
-  const std::string FRAGMENT_SHADER_PATH = "../resources/shaders/simple.frag";
-  const bool        ENABLE_HARDWARE_RT   = false;
+  const std::string VERTEX_SHADER_PATH   = "../../resources/shaders/simple.vert";
+  const std::string FRAGMENT_SHADER_PATH = "../../resources/shaders/simple.frag";
 
   static constexpr uint64_t STAGING_MEM_SIZE = 16 * 16 * 1024u;
 
@@ -149,9 +148,7 @@ protected:
   VkSampler                m_rtImageSampler = VK_NULL_HANDLE;
 
   std::shared_ptr<ISceneObject> m_pAccelStruct = nullptr;
-  std::unique_ptr<RayTracer> m_pRayTracerCPU;
   std::unique_ptr<RayTracer_GPU> m_pRayTracerGPU;
-  void RayTraceCPU();
   void RayTraceGPU();
 
   VkBuffer m_genColorBuffer = VK_NULL_HANDLE;

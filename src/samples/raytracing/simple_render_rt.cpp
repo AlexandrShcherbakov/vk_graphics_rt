@@ -14,7 +14,7 @@ void SimpleRender::SetupQuadRenderer()
   rtargetInfo.size   = m_swapchain.GetExtent();
   m_pFSQuad.reset();
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, m_width, m_height);
-  m_pFSQuad->Create(m_device, "../resources/shaders/quad3_vert.vert.spv", "../resources/shaders/my_quad.frag.spv", rtargetInfo);
+  m_pFSQuad->Create(m_device, "../../resources/shaders/quad3_vert.vert.spv", "../../resources/shaders/my_quad.frag.spv", rtargetInfo);
 }
 
 void SimpleRender::SetupQuadDescriptors()
@@ -75,29 +75,6 @@ void SimpleRender::SetupRTScene()
       m_pAccelStruct->AddInstance(meshMap[info.mesh_id], m_pScnMgr->GetInstanceMatrix(info.inst_id));
   }
   m_pAccelStruct->CommitScene();
-}
-
-// perform ray tracing on the CPU and upload resulting image on the GPU
-void SimpleRender::RayTraceCPU()
-{
-  if(!m_pRayTracerCPU)
-  {
-    m_pRayTracerCPU = std::make_unique<RayTracer>(m_width, m_height);
-    m_pRayTracerCPU->SetScene(m_pAccelStruct);
-  }
-
-  m_pRayTracerCPU->UpdateView(m_cam.pos, m_inverseProjViewMatrix);
-
-  #pragma omp parallel for default(none)
-  for (int j = 0; j < m_height; ++j)
-  {
-    for (int i = 0; i < m_width; ++i)
-    {
-      m_pRayTracerCPU->CastSingleRay(i, j, m_raytracedImageData.data());
-    }
-  }
-
-  m_pCopyHelper->UpdateImage(m_rtImage.image, m_raytracedImageData.data(), m_width, m_height, 4, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void SimpleRender::RayTraceGPU()
