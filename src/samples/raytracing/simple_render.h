@@ -123,9 +123,12 @@ protected:
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
   pipeline_data_t m_basicForwardPipeline {};
+  pipeline_data_t m_debugPointsPipeline {};
 
   VkDescriptorSet m_dSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSet pointsdSet = VK_NULL_HANDLE;
+  VkDescriptorSetLayout pointsdSetLayout = VK_NULL_HANDLE;
   VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // rasterization renderpass
 
   LiteMath::float4x4 m_projectionMatrix;
@@ -147,7 +150,6 @@ protected:
   vk_utils::VulkanImageMem m_rtImage;
   VkSampler                m_rtImageSampler = VK_NULL_HANDLE;
 
-  std::shared_ptr<ISceneObject> m_pAccelStruct = nullptr;
   std::unique_ptr<RayTracer_GPU> m_pRayTracerGPU;
   void RayTraceGPU();
 
@@ -206,11 +208,16 @@ protected:
   void CreateUniformBuffer();
   void UpdateUniformBuffer(float a_time);
 
+  LiteMath::Box4f sceneBbox;
+
   void Cleanup();
 
   void SetupDeviceFeatures();
   void SetupDeviceExtensions();
   void SetupValidationLayers();
+  void GetBbox();
+  VkBuffer pointsBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory pointsMem = VK_NULL_HANDLE;
 };
 
 

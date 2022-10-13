@@ -193,6 +193,17 @@ void SimpleRender::SetupSimplePipeline()
     m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
   }
 
+  if(m_debugPointsPipeline.layout != VK_NULL_HANDLE)
+  {
+    vkDestroyPipelineLayout(m_device, m_debugPointsPipeline.layout, nullptr);
+    m_debugPointsPipeline.layout = VK_NULL_HANDLE;
+  }
+  if(m_debugPointsPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_debugPointsPipeline.pipeline, nullptr);
+    m_debugPointsPipeline.pipeline = VK_NULL_HANDLE;
+  }
+
   vk_utils::GraphicsPipelineMaker maker;
 
   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
@@ -206,6 +217,28 @@ void SimpleRender::SetupSimplePipeline()
 
   m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
                                                        m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
+
+  {
+    m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT);
+    m_pBindings->BindBuffer(0, pointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    m_pBindings->BindEnd(&pointsdSet, &pointsdSetLayout);
+    std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
+    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/debug_points.frag.spv";
+    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/debug_points.vert.spv";
+
+    maker.LoadShaders(m_device, shader_paths);
+
+    m_debugPointsPipeline.layout = maker.MakeLayout(m_device, {pointsdSetLayout}, sizeof(pushConst2M));
+    maker.SetDefaultState(m_width, m_height);
+
+    VkPipelineVertexInputStateCreateInfo vertInfo = {};
+    vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    VkPipelineInputAssemblyStateCreateInfo ia = {};
+    ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    ia.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    m_debugPointsPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
+                                                        m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
+  }
 }
 
 void SimpleRender::CreateUniformBuffer()
@@ -232,6 +265,29 @@ void SimpleRender::CreateUniformBuffer()
   m_uniforms.animateLightColor = true;
 
   UpdateUniformBuffer(0.0f);
+
+  {
+    VkMemoryRequirements memReq;
+    pointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * 1000, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &pointsMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, pointsBuffer, pointsMem, 0));
+
+    std::vector<float4> points(1000);
+    for (uint32_t x = 0, idx = 0; x < 10; ++x)
+      for (uint32_t y = 0; y < 10; ++y)
+        for (uint32_t z = 0; z < 10; ++z, ++idx)
+          points[idx] = sceneBbox.boxMin + (sceneBbox.boxMax - sceneBbox.boxMin) * float4(x, y, z, 0.0) / 9.f;
+    m_pCopyHelper->UpdateBuffer(pointsBuffer, 0, points.data(), points.size() * sizeof(float4));
+  }
 }
 
 void SimpleRender::UpdateUniformBuffer(float a_time)
@@ -296,6 +352,16 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
+
+    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
+
+    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
+                            &pointsdSet, 0, VK_NULL_HANDLE);
+    pushConst2M.model = float4x4();
+    vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
+                         sizeof(pushConst2M), &pushConst2M);
+
+    vkCmdDraw(a_cmdBuff, 1000, 1, 0, 0);
 
     vkCmdEndRenderPass(a_cmdBuff);
   }
@@ -455,6 +521,7 @@ void SimpleRender::LoadScene(const char* path)
   m_pScnMgr->LoadScene(path);
   m_pScnMgr->BuildAllBLAS();
   m_pScnMgr->BuildTLAS();
+  GetBbox();
 
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
     {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1},
@@ -611,6 +678,18 @@ void SimpleRender::Cleanup()
   {
     vkFreeMemory(m_device, m_uboAlloc, nullptr);
     m_uboAlloc = VK_NULL_HANDLE;
+  }
+
+  if(pointsBuffer != VK_NULL_HANDLE)
+  {
+    vkDestroyBuffer(m_device, pointsBuffer, nullptr);
+    pointsBuffer = VK_NULL_HANDLE;
+  }
+
+  if(pointsMem != VK_NULL_HANDLE)
+  {
+    vkFreeMemory(m_device, pointsMem, nullptr);
+    pointsMem = VK_NULL_HANDLE;
   }
 
   if(m_genColorBuffer != VK_NULL_HANDLE)

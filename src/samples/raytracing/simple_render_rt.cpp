@@ -41,40 +41,20 @@ void SimpleRender::SetupRTImage()
 // ***************************************************************************************************************************
 
 // convert geometry data and pass it to acceleration structure builder
-void SimpleRender::SetupRTScene()
+void SimpleRender::GetBbox()
 {
-  m_pAccelStruct = std::shared_ptr<ISceneObject>(CreateSceneRT(""));
-  m_pAccelStruct->ClearGeom();
-
   auto meshesData = m_pScnMgr->GetMeshData();
-  std::unordered_map<uint32_t, uint32_t> meshMap;
   for(size_t i = 0; i < m_pScnMgr->MeshesNum(); ++i)
   {
     const auto& info = m_pScnMgr->GetMeshInfo(i);
     auto vertices = reinterpret_cast<float*>((char*)meshesData->VertexData() + info.m_vertexOffset * meshesData->SingleVertexSize());
-    auto indices = meshesData->IndexData() + info.m_indexOffset;
 
     auto stride = meshesData->SingleVertexSize() / sizeof(float);
-    std::vector<float4> m_vPos4f(info.m_vertNum);
-    std::vector<uint32_t> m_indicesReordered(info.m_indNum);
     for(size_t v = 0; v < info.m_vertNum; ++v)
     {
-      m_vPos4f[v] = float4(vertices[v * stride + 0], vertices[v * stride + 1], vertices[v * stride + 2], 1.0f);
+      sceneBbox.include(float4(vertices[v * stride + 0], vertices[v * stride + 1], vertices[v * stride + 2], 1.0f));
     }
-    memcpy(m_indicesReordered.data(), indices, info.m_indNum * sizeof(m_indicesReordered[0]));
-
-    auto geomId = m_pAccelStruct->AddGeom_Triangles4f(m_vPos4f.data(), m_vPos4f.size(), m_indicesReordered.data(), m_indicesReordered.size());
-    meshMap[i] = geomId;
   }
-
-  m_pAccelStruct->ClearScene();
-  for(size_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
-  {
-    const auto& info = m_pScnMgr->GetInstanceInfo(i);
-    if(meshMap.count(info.mesh_id))
-      m_pAccelStruct->AddInstance(meshMap[info.mesh_id], m_pScnMgr->GetInstanceMatrix(info.inst_id));
-  }
-  m_pAccelStruct->CommitScene();
 }
 
 void SimpleRender::RayTraceGPU()
