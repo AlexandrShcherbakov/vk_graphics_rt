@@ -268,7 +268,7 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     VkMemoryRequirements memReq;
-    pointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * 1000, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    pointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * MAX_POINTS_COUNT, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -281,11 +281,32 @@ void SimpleRender::CreateUniformBuffer()
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, pointsBuffer, pointsMem, 0));
 
-    std::vector<float4> points(1000);
-    for (uint32_t x = 0, idx = 0; x < 10; ++x)
-      for (uint32_t y = 0; y < 10; ++y)
-        for (uint32_t z = 0; z < 10; ++z, ++idx)
-          points[idx] = sceneBbox.boxMin + (sceneBbox.boxMax - sceneBbox.boxMin) * float4(x, y, z, 0.0) / 9.f;
+    std::vector<float4> points;
+    const float VOXEL_SIZE = 0.5f;
+    const float OFFSET = 1e-3f;
+    srand(0);
+    for (float x = sceneBbox.boxMin.x - OFFSET; x < sceneBbox.boxMax.x + OFFSET; x += VOXEL_SIZE)
+      for (float y = sceneBbox.boxMin.y - OFFSET; y < sceneBbox.boxMax.y + OFFSET; y += VOXEL_SIZE)
+        for (float z = sceneBbox.boxMin.z - OFFSET; z < sceneBbox.boxMax.z + OFFSET; z += VOXEL_SIZE)
+        {
+          // x,y,z is left bottom close corner of the voxel
+          float3 voxelCenter = float3(x, y, z) + VOXEL_SIZE * 0.5;
+          for (uint32_t side = 0; side < 6; ++side)
+          {
+            const uint32_t axis = side % 3;
+            const float offsetSign = side / 3 == 0 ? -1.f : 1.0f;
+            const float3 offsetMask = float3(axis == 0 ? 1.f : 0.f, axis == 1 ? 1.f : 0.f, axis == 2 ? 1.f : 0.f);
+            const float3 randMask = float3(1.0f, 1.0f, 1.0f) - offsetMask;
+            const float3 offset = offsetMask * offsetSign * VOXEL_SIZE * 0.5f;
+            const float3 sideCenter = voxelCenter + offset;
+            for (uint32_t i = 0; i < 16; ++i)
+            {
+              float3 p = ((float3(rand(), rand(), rand()) / RAND_MAX) - 0.5f) * randMask * VOXEL_SIZE;
+              points.push_back(to_float4(sideCenter + p, 1.f));
+            }
+          }
+        }
+    pointsToDraw = points.size();
     m_pCopyHelper->UpdateBuffer(pointsBuffer, 0, points.data(), points.size() * sizeof(float4));
   }
 }
@@ -361,7 +382,7 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
     vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
                          sizeof(pushConst2M), &pushConst2M);
 
-    vkCmdDraw(a_cmdBuff, 1000, 1, 0, 0);
+    vkCmdDraw(a_cmdBuff, pointsToDraw, 1, 0, 0);
 
     vkCmdEndRenderPass(a_cmdBuff);
   }

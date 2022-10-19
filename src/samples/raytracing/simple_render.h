@@ -216,6 +216,8 @@ protected:
   void SetupDeviceExtensions();
   void SetupValidationLayers();
   void GetBbox();
+  const uint32_t MAX_POINTS_COUNT = 100000;
+  uint32_t pointsToDraw = 0;
   VkBuffer pointsBuffer = VK_NULL_HANDLE;
   VkDeviceMemory pointsMem = VK_NULL_HANDLE;
 };
