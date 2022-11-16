@@ -152,6 +152,7 @@ protected:
 
   std::unique_ptr<RayTracer_GPU> m_pRayTracerGPU;
   void RayTraceGPU();
+  void TraceGenSamples();
 
   VkBuffer m_genColorBuffer = VK_NULL_HANDLE;
   VkDeviceMemory m_colorMem = VK_NULL_HANDLE;
@@ -220,6 +221,13 @@ protected:
   uint32_t pointsToDraw = 0;
   VkBuffer pointsBuffer = VK_NULL_HANDLE;
   VkDeviceMemory pointsMem = VK_NULL_HANDLE;
+  VkBuffer voxelCenterBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory voxelCenterMem = VK_NULL_HANDLE;
+  VkBuffer indirectPointsBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory indirectPointsMem = VK_NULL_HANDLE;
+  VkBuffer samplePointsBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory samplePointsMem = VK_NULL_HANDLE;
+  uint32_t voxelsCount;
 };
 
 

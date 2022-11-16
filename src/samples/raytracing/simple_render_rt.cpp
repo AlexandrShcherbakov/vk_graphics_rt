@@ -176,3 +176,43 @@ void SimpleRender::RayTraceGPU()
   }
 
 }
+
+void SimpleRender::TraceGenSamples()
+{
+  if(!m_pRayTracerGPU)
+  {
+    m_pRayTracerGPU = std::make_unique<RayTracer_GPU>(m_width, m_height);
+    m_pRayTracerGPU->InitVulkanObjects(m_device, m_physicalDevice, m_width * m_height);
+    m_pRayTracerGPU->InitMemberBuffers();
+
+    const size_t bufferSize1 = m_width * m_height * sizeof(uint32_t);
+
+    auto tmp = std::make_shared<VulkanRTX>(m_pScnMgr);
+    tmp->CommitScene();
+
+    m_pRayTracerGPU->SetScene(tmp);
+    m_pRayTracerGPU->SetVulkanInOutForGenSamples(pointsBuffer, voxelCenterBuffer, indirectPointsBuffer, samplePointsBuffer);
+    m_pRayTracerGPU->UpdateAll(m_pCopyHelper);
+  }
+
+  m_pRayTracerGPU->UpdateView(m_cam.pos, m_inverseProjViewMatrix);
+  m_pRayTracerGPU->UpdatePlainMembers(m_pCopyHelper);
+  
+  // do ray tracing
+  //
+  {
+    VkCommandBuffer commandBuffer = vk_utils::createCommandBuffer(m_device, m_commandPool);
+
+    VkCommandBufferBeginInfo beginCommandBufferInfo = {};
+    beginCommandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginCommandBufferInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
+    vkCmdFillBuffer(commandBuffer, indirectPointsBuffer, 0, sizeof(uint32_t) * 4, 0);
+    m_pRayTracerGPU->GenSamplesCmd(commandBuffer, pointsToDraw, 6 * 16);
+
+    vkEndCommandBuffer(commandBuffer);
+
+    vk_utils::executeCommandBufferNow(commandBuffer, m_graphicsQueue, m_device);
+  }
+}

@@ -1,0 +1,71 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_ray_query : require
+
+layout(binding = 0, set = 0) buffer inp_points { vec4 points[]; };
+layout(binding = 1, set = 0) buffer targ_points { vec4 voxel_centers[]; };
+layout(binding = 2, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
+layout(binding = 3, set = 0) buffer out_point { vec4 out_points[]; };
+layout(binding = 4, set = 0) buffer counters { uint indirect_buf[]; };
+
+// RayScene intersection with 'm_pAccelStruct'
+//
+bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len, inout vec3 target)
+{
+  rayQueryEXT rayQuery;
+  rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
+  
+  while(rayQueryProceedEXT(rayQuery)) { }
+ 
+
+  if(rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT)
+  {    
+	  float t         = rayQueryGetIntersectionTEXT(rayQuery, true);
+    target = rayPos + rayDir * t;
+    return true;
+  }
+
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  uint pointsCount;
+  uint perVoxelCount;
+  uint stepIter;
+} kgenArgs;
+
+
+void main()
+{
+  const uint tid = uint(gl_GlobalInvocationID[0]); 
+  if (tid == 0)
+  {
+    indirect_buf[1] = 1;
+    indirect_buf[2] = 0;
+    indirect_buf[3] = 0;
+  }
+
+  if (tid >= kgenArgs.pointsCount)
+    return;
+  vec3 res;
+  vec3 dir = (voxel_centers[tid / kgenArgs.perVoxelCount] - points[tid]).xyz;
+  float len = length(dir);
+  dir /= len;
+  if (m_pAccelStruct_RayQuery_NearestHit(points[tid].xyz, dir, len * 2.f, res))
+  {
+    uint targetIdx = atomicAdd(indirect_buf[0], 1);
+    out_points[targetIdx] = vec4(mix(points[tid].xyz, res, float(kgenArgs.stepIter) / 4096.f), 1);
+  }
+  else
+  {
+    uint targetIdx = atomicAdd(indirect_buf[0], 1);
+    out_points[targetIdx] = vec4(mix(points[tid].xyz, points[tid].xyz + dir * len * 2.f, float(kgenArgs.stepIter) / 4096.f), 1);
+  }
+}
+

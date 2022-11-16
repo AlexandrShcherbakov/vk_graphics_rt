@@ -34,6 +34,19 @@ public:
     InitAllGeneratedDescriptorSets_CastSingleRay();
   }
 
+  virtual void SetVulkanInOutForGenSamples(
+    VkBuffer points,
+    VkBuffer voxel_centers,
+    VkBuffer indirect_buffer,
+    VkBuffer out_points)
+  {
+    genSamplesData.indirectBuffer = indirect_buffer;
+    genSamplesData.inPointsBuffer = points;
+    genSamplesData.outPointsBuffer = out_points;
+    genSamplesData.targetPointsBuffer = voxel_centers;
+    InitAllGeneratedDescriptorSets_GenSamples();
+  }
+
   virtual ~RayTracer_Generated();
 
 
@@ -52,10 +65,12 @@ public:
   virtual void UpdateTextureMembers(std::shared_ptr<vk_utils::ICopyEngine> a_pCopyEngine);
   
   virtual void CastSingleRayCmd(VkCommandBuffer a_commandBuffer, uint32_t tidX, uint32_t tidY, uint32_t* out_color);
+  virtual void GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_t points_count, uint32_t points_per_voxel);
 
   virtual void copyKernelFloatCmd(uint32_t length);
   
   virtual void CastSingleRayMegaCmd(uint32_t tidX, uint32_t tidY, uint32_t* out_color);
+  void GenSamplesCmd(uint32_t tidX, uint32_t tidY);
   
   struct MemLoc
   {
@@ -92,6 +107,7 @@ protected:
   virtual void AllocateAllDescriptorSets();
 
   virtual void InitAllGeneratedDescriptorSets_CastSingleRay();
+  virtual void InitAllGeneratedDescriptorSets_GenSamples();
 
   virtual void AssignBuffersToMemory(const std::vector<VkBuffer>& a_buffers, VkDeviceMemory a_mem);
 
@@ -113,7 +129,13 @@ protected:
     size_t   out_colorOffset = 0;
   } CastSingleRay_local;
 
-
+  struct GenSamplesData
+  {
+    VkBuffer inPointsBuffer = VK_NULL_HANDLE;
+    VkBuffer outPointsBuffer = VK_NULL_HANDLE;
+    VkBuffer targetPointsBuffer = VK_NULL_HANDLE;
+    VkBuffer indirectBuffer = VK_NULL_HANDLE;
+  } genSamplesData;
 
   struct MembersDataGPU
   {
@@ -126,7 +148,12 @@ protected:
   VkPipeline            CastSingleRayMegaPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout CastSingleRayMegaDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreateCastSingleRayMegaDSLayout();
+  VkDescriptorSetLayout GenSampleDSLayout();
   void InitKernel_CastSingleRayMega(const char* a_filePath);
+
+  VkPipelineLayout      GenSamplesLayout   = VK_NULL_HANDLE;
+  VkPipeline            GenSamplesPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout GenSamplesDSLayout = VK_NULL_HANDLE;
 
 
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
@@ -137,7 +164,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[1];
+  VkDescriptorSet  m_allGeneratedDS[2];
 
   RayTracer_UBO_Data m_uboData;
   
