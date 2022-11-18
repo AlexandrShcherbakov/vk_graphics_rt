@@ -55,6 +55,8 @@ void SimpleRender::GetBbox()
       sceneBbox.include(float4(vertices[v * stride + 0], vertices[v * stride + 1], vertices[v * stride + 2], 1.0f));
     }
   }
+  sceneBbox.boxMin -= 1e-3f;
+  sceneBbox.boxMax += 1e-3f;
 }
 
 void SimpleRender::RayTraceGPU()

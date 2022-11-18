@@ -268,7 +268,6 @@ void SimpleRender::CreateUniformBuffer()
   UpdateUniformBuffer(0.0f);
 
   const float VOXEL_SIZE = 0.25f;
-  const float OFFSET = 1e-3f;
 
   {
     VkMemoryRequirements memReq;
@@ -287,9 +286,9 @@ void SimpleRender::CreateUniformBuffer()
 
     std::vector<float4> points;
     srand(0);
-    for (float x = sceneBbox.boxMin.x - OFFSET; x < sceneBbox.boxMax.x + OFFSET; x += VOXEL_SIZE)
-      for (float y = sceneBbox.boxMin.y - OFFSET; y < sceneBbox.boxMax.y + OFFSET; y += VOXEL_SIZE)
-        for (float z = sceneBbox.boxMin.z - OFFSET; z < sceneBbox.boxMax.z + OFFSET; z += VOXEL_SIZE)
+    for (float x = sceneBbox.boxMin.x; x < sceneBbox.boxMax.x; x += VOXEL_SIZE)
+      for (float y = sceneBbox.boxMin.y; y < sceneBbox.boxMax.y; y += VOXEL_SIZE)
+        for (float z = sceneBbox.boxMin.z; z < sceneBbox.boxMax.z; z += VOXEL_SIZE)
         {
           // x,y,z is left bottom close corner of the voxel
           float3 voxelCenter = float3(x, y, z) + VOXEL_SIZE * 0.5;
@@ -312,9 +311,9 @@ void SimpleRender::CreateUniformBuffer()
     m_pCopyHelper->UpdateBuffer(pointsBuffer, 0, points.data(), points.size() * sizeof(float4));
   }
   {
-    voxelsCount = std::ceil((sceneBbox.boxMax.x - sceneBbox.boxMin.x + 2.f * OFFSET) / VOXEL_SIZE)
-      * std::ceil((sceneBbox.boxMax.y - sceneBbox.boxMin.y + 2.f * OFFSET) / VOXEL_SIZE)
-      * std::ceil((sceneBbox.boxMax.z - sceneBbox.boxMin.z + 2.f * OFFSET) / VOXEL_SIZE);
+    voxelsCount = std::ceil((sceneBbox.boxMax.x - sceneBbox.boxMin.x) / VOXEL_SIZE)
+      * std::ceil((sceneBbox.boxMax.y - sceneBbox.boxMin.y) / VOXEL_SIZE)
+      * std::ceil((sceneBbox.boxMax.z - sceneBbox.boxMin.z) / VOXEL_SIZE);
     VkMemoryRequirements memReq;
     voxelCenterBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * voxelsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
 
@@ -330,9 +329,9 @@ void SimpleRender::CreateUniformBuffer()
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, voxelCenterBuffer, voxelCenterMem, 0));
 
     std::vector<float4> centers;
-    for (float x = sceneBbox.boxMin.x - OFFSET; x < sceneBbox.boxMax.x + OFFSET; x += VOXEL_SIZE)
-      for (float y = sceneBbox.boxMin.y - OFFSET; y < sceneBbox.boxMax.y + OFFSET; y += VOXEL_SIZE)
-        for (float z = sceneBbox.boxMin.z - OFFSET; z < sceneBbox.boxMax.z + OFFSET; z += VOXEL_SIZE)
+    for (float x = sceneBbox.boxMin.x; x < sceneBbox.boxMax.x; x += VOXEL_SIZE)
+      for (float y = sceneBbox.boxMin.y; y < sceneBbox.boxMax.y; y += VOXEL_SIZE)
+        for (float z = sceneBbox.boxMin.z; z < sceneBbox.boxMax.z; z += VOXEL_SIZE)
         {
           centers.push_back(float4(x + VOXEL_SIZE * 0.5f, y + VOXEL_SIZE * 0.5f, z + VOXEL_SIZE * 0.5f, 1.0f));
         }
