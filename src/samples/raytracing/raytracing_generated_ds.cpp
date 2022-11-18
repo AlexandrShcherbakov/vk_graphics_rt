@@ -110,10 +110,10 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_CastSingleRay()
 
 void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
 {
-  std::array<VkDescriptorBufferInfo, 4> descriptorBufferInfo;
+  std::array<VkDescriptorBufferInfo, 3> descriptorBufferInfo;
   VkAccelerationStructureKHR accelStructs = {};
   VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelInfo = {};
-  std::array<VkWriteDescriptorSet, 5> writeDescriptorSet;
+  std::array<VkWriteDescriptorSet, 4> writeDescriptorSet;
 
   descriptorBufferInfo[0]        = VkDescriptorBufferInfo{};
   descriptorBufferInfo[0].buffer = genSamplesData.inPointsBuffer;
@@ -138,31 +138,31 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
     descriptorAccelInfo = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,VK_NULL_HANDLE,1, &accelStructs};
   }
 
-  writeDescriptorSet[2]                  = VkWriteDescriptorSet{};
-  writeDescriptorSet[2].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  writeDescriptorSet[2].dstSet           = m_allGeneratedDS[1];
-  writeDescriptorSet[2].dstBinding       = 2;
-  writeDescriptorSet[2].descriptorCount  = 1;
-  writeDescriptorSet[2].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-  writeDescriptorSet[2].pNext          = &descriptorAccelInfo;
-
-  descriptorBufferInfo[1]        = VkDescriptorBufferInfo{};
-  descriptorBufferInfo[1].buffer = genSamplesData.targetPointsBuffer;
-  descriptorBufferInfo[1].offset = 0;
-  descriptorBufferInfo[1].range  = VK_WHOLE_SIZE;  
-
   writeDescriptorSet[1]                  = VkWriteDescriptorSet{};
   writeDescriptorSet[1].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writeDescriptorSet[1].dstSet           = m_allGeneratedDS[1];
   writeDescriptorSet[1].dstBinding       = 1;
   writeDescriptorSet[1].descriptorCount  = 1;
-  writeDescriptorSet[1].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  writeDescriptorSet[1].pBufferInfo      = &descriptorBufferInfo[1];
-  writeDescriptorSet[1].pImageInfo       = nullptr;
-  writeDescriptorSet[1].pTexelBufferView = nullptr;
+  writeDescriptorSet[1].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+  writeDescriptorSet[1].pNext          = &descriptorAccelInfo;
+
+  descriptorBufferInfo[1]        = VkDescriptorBufferInfo{};
+  descriptorBufferInfo[1].buffer = genSamplesData.outPointsBuffer;
+  descriptorBufferInfo[1].offset = 0;
+  descriptorBufferInfo[1].range  = VK_WHOLE_SIZE;  
+
+  writeDescriptorSet[2]                  = VkWriteDescriptorSet{};
+  writeDescriptorSet[2].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeDescriptorSet[2].dstSet           = m_allGeneratedDS[1];
+  writeDescriptorSet[2].dstBinding       = 2;
+  writeDescriptorSet[2].descriptorCount  = 1;
+  writeDescriptorSet[2].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  writeDescriptorSet[2].pBufferInfo      = &descriptorBufferInfo[1];
+  writeDescriptorSet[2].pImageInfo       = nullptr;
+  writeDescriptorSet[2].pTexelBufferView = nullptr;
 
   descriptorBufferInfo[2]        = VkDescriptorBufferInfo{};
-  descriptorBufferInfo[2].buffer = genSamplesData.outPointsBuffer;
+  descriptorBufferInfo[2].buffer = genSamplesData.indirectBuffer;
   descriptorBufferInfo[2].offset = 0;
   descriptorBufferInfo[2].range  = VK_WHOLE_SIZE;  
 
@@ -175,21 +175,6 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
   writeDescriptorSet[3].pBufferInfo      = &descriptorBufferInfo[2];
   writeDescriptorSet[3].pImageInfo       = nullptr;
   writeDescriptorSet[3].pTexelBufferView = nullptr;
-
-  descriptorBufferInfo[3]        = VkDescriptorBufferInfo{};
-  descriptorBufferInfo[3].buffer = genSamplesData.indirectBuffer;
-  descriptorBufferInfo[3].offset = 0;
-  descriptorBufferInfo[3].range  = VK_WHOLE_SIZE;  
-
-  writeDescriptorSet[4]                  = VkWriteDescriptorSet{};
-  writeDescriptorSet[4].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  writeDescriptorSet[4].dstSet           = m_allGeneratedDS[1];
-  writeDescriptorSet[4].dstBinding       = 4;
-  writeDescriptorSet[4].descriptorCount  = 1;
-  writeDescriptorSet[4].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  writeDescriptorSet[4].pBufferInfo      = &descriptorBufferInfo[3];
-  writeDescriptorSet[4].pImageInfo       = nullptr;
-  writeDescriptorSet[4].pTexelBufferView = nullptr;
 
   vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
 }

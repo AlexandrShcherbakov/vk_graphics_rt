@@ -111,30 +111,33 @@ void RayTracer_Generated::CastSingleRayMegaCmd(uint32_t tidX, uint32_t tidY, uin
  
 }
 
-void RayTracer_Generated::GenSamplesCmd(uint32_t points_count, uint32_t points_per_voxel)
+void RayTracer_Generated::GenSamplesCmd(uint32_t points_per_voxel,
+  LiteMath::float3 bmin,
+  LiteMath::float3 bmax,
+  float voxel_size,
+  float time)
 {
   uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
 
   struct KernelArgsPC
   {
-    uint32_t pointsCount;
-    uint32_t pointsPerVoxel;
-    uint32_t step;
+    LiteMath::float3 bmin;
+    uint32_t perFacePointsCount;
+    LiteMath::float3 bmax;
+    float voxelSize;
+    float time;
   } pcData;
 
-  static int iter = 0;
-
-  pcData.pointsCount  = points_count;
-  pcData.pointsPerVoxel  = points_per_voxel;
-  pcData.step = iter;
-  iter = (iter + 1) % 4096;
+  pcData.perFacePointsCount  = points_per_voxel;
+  pcData.bmin = bmin;
+  pcData.bmax = bmax;
+  pcData.voxelSize = voxel_size;
+  pcData.time = time;
 
   vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
 
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, GenSamplesPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (points_count + blockSizeX - 1) / blockSizeX, 1, 1);
+  vkCmdDispatch    (m_currCmdBuffer, (1000000 + blockSizeX - 1) / blockSizeX, 1, 1);
 }
 
 
@@ -202,12 +205,16 @@ void RayTracer_Generated::CastSingleRayCmd(VkCommandBuffer a_commandBuffer, uint
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }
 
-void RayTracer_Generated::GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_t points_count, uint32_t points_per_voxel)
+void RayTracer_Generated::GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel,
+  LiteMath::float3 bmin,
+  LiteMath::float3 bmax,
+  float voxel_size,
+  float time)
 {
   m_currCmdBuffer = a_commandBuffer;
   VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
   vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, GenSamplesLayout, 0, 1, &m_allGeneratedDS[1], 0, nullptr);
-  GenSamplesCmd(points_count, points_per_voxel);
+  GenSamplesCmd(points_per_voxel, bmin, bmax, voxel_size, time);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }
 

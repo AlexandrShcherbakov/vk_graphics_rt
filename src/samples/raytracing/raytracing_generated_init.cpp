@@ -99,7 +99,7 @@ VkDescriptorSetLayout RayTracer_Generated::CreateCastSingleRayMegaDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
 {
-  std::array<VkDescriptorSetLayoutBinding, 5> dsBindings;
+  std::array<VkDescriptorSetLayoutBinding, 4> dsBindings;
 
   // binding for out_color
   dsBindings[0].binding            = 0;
@@ -108,31 +108,25 @@ VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
   dsBindings[0].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
   dsBindings[0].pImmutableSamplers = nullptr;
 
+  // binding for m_pAccelStruct
   dsBindings[1].binding            = 1;
-  dsBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   dsBindings[1].descriptorCount    = 1;
   dsBindings[1].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
   dsBindings[1].pImmutableSamplers = nullptr;
 
-  // binding for m_pAccelStruct
+  // binding for POD members stored in m_classDataBuffer
   dsBindings[2].binding            = 2;
-  dsBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+  dsBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   dsBindings[2].descriptorCount    = 1;
   dsBindings[2].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
   dsBindings[2].pImmutableSamplers = nullptr;
 
-  // binding for POD members stored in m_classDataBuffer
   dsBindings[3].binding            = 3;
   dsBindings[3].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   dsBindings[3].descriptorCount    = 1;
   dsBindings[3].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
   dsBindings[3].pImmutableSamplers = nullptr;
-
-  dsBindings[4].binding            = 4;
-  dsBindings[4].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  dsBindings[4].descriptorCount    = 1;
-  dsBindings[4].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[4].pImmutableSamplers = nullptr;
   
   VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
   descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

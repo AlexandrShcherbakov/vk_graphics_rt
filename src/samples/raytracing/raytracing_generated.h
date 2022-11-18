@@ -36,14 +36,12 @@ public:
 
   virtual void SetVulkanInOutForGenSamples(
     VkBuffer points,
-    VkBuffer voxel_centers,
     VkBuffer indirect_buffer,
     VkBuffer out_points)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
     genSamplesData.outPointsBuffer = out_points;
-    genSamplesData.targetPointsBuffer = voxel_centers;
     InitAllGeneratedDescriptorSets_GenSamples();
   }
 
@@ -65,12 +63,20 @@ public:
   virtual void UpdateTextureMembers(std::shared_ptr<vk_utils::ICopyEngine> a_pCopyEngine);
   
   virtual void CastSingleRayCmd(VkCommandBuffer a_commandBuffer, uint32_t tidX, uint32_t tidY, uint32_t* out_color);
-  virtual void GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_t points_count, uint32_t points_per_voxel);
+  virtual void GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel,
+    LiteMath::float3 bmin,
+    LiteMath::float3 bmax,
+    float voxel_size,
+    float time);
 
   virtual void copyKernelFloatCmd(uint32_t length);
   
   virtual void CastSingleRayMegaCmd(uint32_t tidX, uint32_t tidY, uint32_t* out_color);
-  void GenSamplesCmd(uint32_t tidX, uint32_t tidY);
+  void GenSamplesCmd(uint32_t points_per_voxel,
+    LiteMath::float3 bmin,
+    LiteMath::float3 bmax,
+    float voxel_size,
+    float time);
   
   struct MemLoc
   {
@@ -133,7 +139,6 @@ protected:
   {
     VkBuffer inPointsBuffer = VK_NULL_HANDLE;
     VkBuffer outPointsBuffer = VK_NULL_HANDLE;
-    VkBuffer targetPointsBuffer = VK_NULL_HANDLE;
     VkBuffer indirectBuffer = VK_NULL_HANDLE;
   } genSamplesData;
 

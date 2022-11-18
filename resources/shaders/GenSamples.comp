@@ -2,11 +2,10 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_ray_query : require
 
-layout(binding = 0, set = 0) buffer inp_points { vec4 points[]; };
-layout(binding = 1, set = 0) buffer targ_points { vec4 voxel_centers[]; };
-layout(binding = 2, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
-layout(binding = 3, set = 0) buffer out_point { vec4 out_points[]; };
-layout(binding = 4, set = 0) buffer counters { uint indirect_buf[]; };
+layout(binding = 0, set = 0) buffer rand_points { vec4 points[]; };
+layout(binding = 1, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
+layout(binding = 2, set = 0) buffer out_point { vec4 out_points[]; };
+layout(binding = 3, set = 0) buffer counters { uint indirect_buf[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -35,15 +34,17 @@ layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout( push_constant ) uniform kernelArgs
 {
-  uint pointsCount;
-  uint perVoxelCount;
-  uint stepIter;
+  vec3 bmin;
+  uint perFacePointsCount;
+  vec3 bmax;
+  float voxelSize;
+  float time;
 } kgenArgs;
 
 
 void main()
 {
-  const uint tid = uint(gl_GlobalInvocationID[0]); 
+  uint tid = uint(gl_GlobalInvocationID[0]); 
   if (tid == 0)
   {
     indirect_buf[1] = 1;
@@ -51,21 +52,47 @@ void main()
     indirect_buf[3] = 0;
   }
 
-  if (tid >= kgenArgs.pointsCount)
+  uvec3 voxelsExtend = uvec3(ceil((kgenArgs.bmax - kgenArgs.bmin) / kgenArgs.voxelSize));
+  uint pointsCount = voxelsExtend.x * voxelsExtend.y * voxelsExtend.z * 6 * kgenArgs.perFacePointsCount;
+
+  if (tid >= pointsCount)
     return;
+
+  uint onSurfaceIdx = tid % kgenArgs.perFacePointsCount;
+  tid /= kgenArgs.perFacePointsCount;
+  uint surfaceIdx = tid % 6;
+  tid /= 6;
+  uint zVoxel = tid % voxelsExtend.z;
+  tid /= voxelsExtend.z;
+  uint yVoxel = tid % voxelsExtend.y;
+  tid /= voxelsExtend.y;
+  uint xVoxel = tid % voxelsExtend.x;
+  tid /= voxelsExtend.x;
+
+  vec3 voxelCenter = vec3(xVoxel, yVoxel, zVoxel) * kgenArgs.voxelSize + kgenArgs.bmin + kgenArgs.voxelSize * 0.5;
+  uint axis = surfaceIdx % 3;
+  float offsetSign = surfaceIdx / 3 == 0 ? -1.0 : 1.0;
+  vec3 offsetMask = vec3(axis == 0 ? 1.0 : 0.0, axis == 1 ? 1.0 : 0.0, axis == 2 ? 1.0 : 0.0);
+  vec3 randMask = vec3(1) - offsetMask;
+  vec3 offset = offsetMask * offsetSign * kgenArgs.voxelSize * 0.5;
+  vec3 sideCenter = voxelCenter + offset;
+
+  vec3 point = points[onSurfaceIdx].xyz * randMask * kgenArgs.voxelSize + sideCenter;
+
   vec3 res;
-  vec3 dir = (voxel_centers[tid / kgenArgs.perVoxelCount] - points[tid]).xyz;
+  vec3 dir = voxelCenter - point;
   float len = length(dir);
   dir /= len;
-  if (m_pAccelStruct_RayQuery_NearestHit(points[tid].xyz, dir, len * 2.f, res))
+  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len * 2.f, res))
   {
+    float targetLen = length(res - point);
     uint targetIdx = atomicAdd(indirect_buf[0], 1);
-    out_points[targetIdx] = vec4(mix(points[tid].xyz, res, float(kgenArgs.stepIter) / 4096.f), 1);
+    out_points[targetIdx] = vec4(mix(point, point + dir * min(targetLen, len * 2.0), max(fract(kgenArgs.time / 7.0), 1)), 1);
   }
-  else
-  {
-    uint targetIdx = atomicAdd(indirect_buf[0], 1);
-    out_points[targetIdx] = vec4(mix(points[tid].xyz, points[tid].xyz + dir * len * 2.f, float(kgenArgs.stepIter) / 4096.f), 1);
-  }
+  // else
+  // {
+  //   uint targetIdx = atomicAdd(indirect_buf[0], 1);
+  //   out_points[targetIdx] = vec4(mix(point, point + dir * len * 2.f, fract(kgenArgs.time / 7.0)), 1);
+  // }
 }
 

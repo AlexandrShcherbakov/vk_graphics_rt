@@ -267,11 +267,9 @@ void SimpleRender::CreateUniformBuffer()
 
   UpdateUniformBuffer(0.0f);
 
-  const float VOXEL_SIZE = 0.25f;
-
   {
     VkMemoryRequirements memReq;
-    pointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * MAX_POINTS_COUNT, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    pointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * PER_SURFACE_POINTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -286,56 +284,13 @@ void SimpleRender::CreateUniformBuffer()
 
     std::vector<float4> points;
     srand(0);
-    for (float x = sceneBbox.boxMin.x; x < sceneBbox.boxMax.x; x += VOXEL_SIZE)
-      for (float y = sceneBbox.boxMin.y; y < sceneBbox.boxMax.y; y += VOXEL_SIZE)
-        for (float z = sceneBbox.boxMin.z; z < sceneBbox.boxMax.z; z += VOXEL_SIZE)
-        {
-          // x,y,z is left bottom close corner of the voxel
-          float3 voxelCenter = float3(x, y, z) + VOXEL_SIZE * 0.5;
-          for (uint32_t side = 0; side < 6; ++side)
-          {
-            const uint32_t axis = side % 3;
-            const float offsetSign = side / 3 == 0 ? -1.f : 1.0f;
-            const float3 offsetMask = float3(axis == 0 ? 1.f : 0.f, axis == 1 ? 1.f : 0.f, axis == 2 ? 1.f : 0.f);
-            const float3 randMask = float3(1.0f, 1.0f, 1.0f) - offsetMask;
-            const float3 offset = offsetMask * offsetSign * VOXEL_SIZE * 0.5f;
-            const float3 sideCenter = voxelCenter + offset;
-            for (uint32_t i = 0; i < 16; ++i)
-            {
-              float3 p = ((float3(rand(), rand(), rand()) / RAND_MAX) - 0.5f) * randMask * VOXEL_SIZE;
-              points.push_back(to_float4(sideCenter + p, 1.f));
-            }
-          }
-        }
+    for (uint32_t i = 0; i < PER_SURFACE_POINTS; ++i)
+    {
+      float3 p = ((float3(rand(), rand(), rand()) / RAND_MAX) - 0.5f);
+      points.push_back(to_float4(p, 1.f));
+    }
     pointsToDraw = points.size();
     m_pCopyHelper->UpdateBuffer(pointsBuffer, 0, points.data(), points.size() * sizeof(float4));
-  }
-  {
-    voxelsCount = std::ceil((sceneBbox.boxMax.x - sceneBbox.boxMin.x) / VOXEL_SIZE)
-      * std::ceil((sceneBbox.boxMax.y - sceneBbox.boxMin.y) / VOXEL_SIZE)
-      * std::ceil((sceneBbox.boxMax.z - sceneBbox.boxMin.z) / VOXEL_SIZE);
-    VkMemoryRequirements memReq;
-    voxelCenterBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * voxelsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
-
-    VkMemoryAllocateInfo allocateInfo = {};
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.pNext = nullptr;
-    allocateInfo.allocationSize = memReq.size;
-    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
-                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                            m_physicalDevice);
-    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &voxelCenterMem));
-
-    VK_CHECK_RESULT(vkBindBufferMemory(m_device, voxelCenterBuffer, voxelCenterMem, 0));
-
-    std::vector<float4> centers;
-    for (float x = sceneBbox.boxMin.x; x < sceneBbox.boxMax.x; x += VOXEL_SIZE)
-      for (float y = sceneBbox.boxMin.y; y < sceneBbox.boxMax.y; y += VOXEL_SIZE)
-        for (float z = sceneBbox.boxMin.z; z < sceneBbox.boxMax.z; z += VOXEL_SIZE)
-        {
-          centers.push_back(float4(x + VOXEL_SIZE * 0.5f, y + VOXEL_SIZE * 0.5f, z + VOXEL_SIZE * 0.5f, 1.0f));
-        }
-    m_pCopyHelper->UpdateBuffer(voxelCenterBuffer, 0, centers.data(), centers.size() * sizeof(float4));
   }
   {
     VkMemoryRequirements memReq;
