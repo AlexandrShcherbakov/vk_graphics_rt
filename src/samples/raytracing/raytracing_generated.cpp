@@ -115,7 +115,8 @@ void RayTracer_Generated::GenSamplesCmd(uint32_t points_per_voxel,
   LiteMath::float3 bmin,
   LiteMath::float3 bmax,
   float voxel_size,
-  float time)
+  float time,
+  LiteMath::float4x4 matrix)
 {
   uint32_t blockSizeX = 256;
 
@@ -125,6 +126,7 @@ void RayTracer_Generated::GenSamplesCmd(uint32_t points_per_voxel,
     uint32_t perFacePointsCount;
     LiteMath::float3 bmax;
     float voxelSize;
+    mat4 modelMatrix;
     float time;
   } pcData;
 
@@ -133,6 +135,7 @@ void RayTracer_Generated::GenSamplesCmd(uint32_t points_per_voxel,
   pcData.bmax = bmax;
   pcData.voxelSize = voxel_size;
   pcData.time = time;
+  pcData.modelMatrix = matrix;
 
   vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
 
@@ -209,12 +212,13 @@ void RayTracer_Generated::GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_
   LiteMath::float3 bmin,
   LiteMath::float3 bmax,
   float voxel_size,
-  float time)
+  float time,
+  LiteMath::float4x4 matrix)
 {
   m_currCmdBuffer = a_commandBuffer;
   VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
   vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, GenSamplesLayout, 0, 1, &m_allGeneratedDS[1], 0, nullptr);
-  GenSamplesCmd(points_per_voxel, bmin, bmax, voxel_size, time);
+  GenSamplesCmd(points_per_voxel, bmin, bmax, voxel_size, time, matrix);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }
 

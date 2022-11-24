@@ -193,7 +193,10 @@ void SimpleRender::TraceGenSamples()
     tmp->CommitScene();
 
     m_pRayTracerGPU->SetScene(tmp);
-    m_pRayTracerGPU->SetVulkanInOutForGenSamples(pointsBuffer, indirectPointsBuffer, samplePointsBuffer);
+    m_pRayTracerGPU->SetVulkanInOutForGenSamples(
+      pointsBuffer, indirectPointsBuffer,
+      samplePointsBuffer, m_pScnMgr->GetVertexBuffer(), m_pScnMgr->GetIndexBuffer(),
+      m_pScnMgr->GetInstanceMatBuffer(), m_pScnMgr->GetMeshInfoBuffer());
     m_pRayTracerGPU->UpdateAll(m_pCopyHelper);
   }
 
@@ -213,7 +216,7 @@ void SimpleRender::TraceGenSamples()
     vkCmdFillBuffer(commandBuffer, indirectPointsBuffer, 0, sizeof(uint32_t) * 4, 0);
     const float VOXEL_SIZE = 0.125f;
     m_pRayTracerGPU->GenSamplesCmd(commandBuffer, PER_SURFACE_POINTS,
-      to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), VOXEL_SIZE, m_uniforms.time);
+      to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), VOXEL_SIZE, m_uniforms.time, m_pScnMgr->GetInstanceMatrix(0));
 
     vkEndCommandBuffer(commandBuffer);
 

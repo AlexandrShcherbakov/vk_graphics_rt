@@ -31,6 +31,7 @@ VulkanRTX::VulkanRTX(VkDevice a_device, VkPhysicalDevice a_physDevice, uint32_t 
   conf.build_acc_structs = true;
   conf.build_acc_structs_while_loading_scene = build_as_add;
   conf.builder_type = BVH_BUILDER_TYPE::RTX;
+  conf.instance_matrix_as_vertex_attribute = true;
 
   m_pScnMgr = std::make_shared<SceneManager>(a_device, a_physDevice, a_graphicsQId, a_pCopyHelper, conf);
   m_pScnMgr->InitEmptyScene(a_maxMeshes, a_maxTotalVertices, a_maxTotalPrimitives, a_maxPrimitivesPerMesh);

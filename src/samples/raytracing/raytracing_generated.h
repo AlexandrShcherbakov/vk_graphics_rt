@@ -37,11 +37,19 @@ public:
   virtual void SetVulkanInOutForGenSamples(
     VkBuffer points,
     VkBuffer indirect_buffer,
-    VkBuffer out_points)
+    VkBuffer out_points,
+    VkBuffer vertex_buffer,
+    VkBuffer index_buffer,
+    VkBuffer matrices_buffer,
+    VkBuffer inst_info_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
     genSamplesData.outPointsBuffer = out_points;
+    genSamplesData.vertexBuffer = vertex_buffer;
+    genSamplesData.indexBuffer = index_buffer;
+    genSamplesData.matricesBuffer = matrices_buffer;
+    genSamplesData.instInfoBuffer = inst_info_buffer;
     InitAllGeneratedDescriptorSets_GenSamples();
   }
 
@@ -67,7 +75,8 @@ public:
     LiteMath::float3 bmin,
     LiteMath::float3 bmax,
     float voxel_size,
-    float time);
+    float time,
+    LiteMath::float4x4 matrix);
 
   virtual void copyKernelFloatCmd(uint32_t length);
   
@@ -76,7 +85,8 @@ public:
     LiteMath::float3 bmin,
     LiteMath::float3 bmax,
     float voxel_size,
-    float time);
+    float time,
+    LiteMath::float4x4 matrix);
   
   struct MemLoc
   {
@@ -140,6 +150,10 @@ protected:
     VkBuffer inPointsBuffer = VK_NULL_HANDLE;
     VkBuffer outPointsBuffer = VK_NULL_HANDLE;
     VkBuffer indirectBuffer = VK_NULL_HANDLE;
+    VkBuffer vertexBuffer = VK_NULL_HANDLE;
+    VkBuffer indexBuffer = VK_NULL_HANDLE;
+    VkBuffer matricesBuffer = VK_NULL_HANDLE;
+    VkBuffer instInfoBuffer = VK_NULL_HANDLE;
   } genSamplesData;
 
   struct MembersDataGPU

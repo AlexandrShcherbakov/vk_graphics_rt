@@ -99,7 +99,7 @@ VkDescriptorSetLayout RayTracer_Generated::CreateCastSingleRayMegaDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
 {
-  std::array<VkDescriptorSetLayoutBinding, 4> dsBindings;
+  std::array<VkDescriptorSetLayoutBinding, 8> dsBindings;
 
   // binding for out_color
   dsBindings[0].binding            = 0;
@@ -127,6 +127,30 @@ VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
   dsBindings[3].descriptorCount    = 1;
   dsBindings[3].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
   dsBindings[3].pImmutableSamplers = nullptr;
+
+  dsBindings[4].binding            = 4;
+  dsBindings[4].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[4].descriptorCount    = 1;
+  dsBindings[4].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings[4].pImmutableSamplers = nullptr;
+
+  dsBindings[5].binding            = 5;
+  dsBindings[5].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[5].descriptorCount    = 1;
+  dsBindings[5].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings[5].pImmutableSamplers = nullptr;
+
+  dsBindings[6].binding            = 6;
+  dsBindings[6].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[6].descriptorCount    = 1;
+  dsBindings[6].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings[6].pImmutableSamplers = nullptr;
+  
+  dsBindings[7].binding            = 7;
+  dsBindings[7].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[7].descriptorCount    = 1;
+  dsBindings[7].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings[7].pImmutableSamplers = nullptr;
   
   VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
   descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

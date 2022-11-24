@@ -13,12 +13,18 @@ layout(push_constant) uniform params_t
 
 layout(binding = 0, set = 0) buffer Points
 {
-    vec4 points[1000];
+    vec4 points[2000];
 };
+
+layout (location = 0 ) out VS_OUT
+{
+    vec3 wNorm;
+} vOut;
 
 out gl_PerVertex { vec4 gl_Position; float gl_PointSize; };
 void main(void)
 {
-    gl_Position   = params.mProjView * vec4((params.mModel * points[gl_VertexIndex]).xyz, 1.0);
+    gl_Position   = params.mProjView * vec4((params.mModel * points[2 * gl_VertexIndex]).xyz, 1.0);
+    vOut.wNorm = (params.mModel * points[2 * gl_VertexIndex + 1]).xyz;
     gl_PointSize = 2;
 }

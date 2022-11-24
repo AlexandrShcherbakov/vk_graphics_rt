@@ -63,8 +63,8 @@ void SimpleRender::GetRTFeatures()
 
 void SimpleRender::SetupValidationLayers()
 {
-  m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-  m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
+  // m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+  // m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
 void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -514,6 +514,7 @@ void SimpleRender::ProcessInput(const AppInput &input)
     std::system("cd ../../resources/shaders && python3 compile_simple_render_shaders.py");
 #endif
 
+    m_pRayTracerGPU.reset();
     SetupSimplePipeline();
 
     for (uint32_t i = 0; i < m_framesInFlight; ++i)

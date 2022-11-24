@@ -152,10 +152,10 @@ bool SceneManager::LoadSceneXML(const std::string &scenePath, bool transpose)
     LoadCommonGeoDataOnGPU();
   }
 
-  if(m_config.instance_matrix_as_vertex_attribute)
-  {
+  // if(m_config.instance_matrix_as_vertex_attribute)
+  // {
     LoadInstanceDataOnGPU();
-  }
+  // }
 
   if(m_config.load_materials != MATERIAL_LOAD_MODE::NONE)
   {

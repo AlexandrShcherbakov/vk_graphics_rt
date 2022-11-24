@@ -6,7 +6,12 @@
 
 layout(location = 0) out vec4 out_fragColor;
 
+layout (location = 0 ) in VS_OUT
+{
+    vec3 wNorm;
+} surf;
+
 void main()
 {
-    out_fragColor = vec4(1, 0, 0, 1);
+    out_fragColor = vec4(normalize(surf.wNorm) * 0.5 + 0.5, 1);
 }
