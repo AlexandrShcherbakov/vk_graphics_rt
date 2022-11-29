@@ -143,6 +143,13 @@ void RayTracer_Generated::GenSamplesCmd(uint32_t points_per_voxel,
   vkCmdDispatch    (m_currCmdBuffer, (1000000 + blockSizeX - 1) / blockSizeX, 1, 1);
 }
 
+void RayTracer_Generated::ComputeFFCmd()
+{
+  uint32_t blockSizeX = 256;
+
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (1000000 + blockSizeX - 1) / blockSizeX, 1, 1);
+}
 
 void RayTracer_Generated::copyKernelFloatCmd(uint32_t length)
 {
@@ -222,3 +229,11 @@ void RayTracer_Generated::GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }
 
+void RayTracer_Generated::ComputeFFCmd(VkCommandBuffer a_commandBuffer)
+{
+  m_currCmdBuffer = a_commandBuffer;
+  VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
+  vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
+  ComputeFFCmd();
+  vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
+}

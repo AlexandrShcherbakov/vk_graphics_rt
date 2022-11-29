@@ -51,6 +51,7 @@ public:
     genSamplesData.matricesBuffer = matrices_buffer;
     genSamplesData.instInfoBuffer = inst_info_buffer;
     InitAllGeneratedDescriptorSets_GenSamples();
+    InitAllGeneratedDescriptorSets_ComputeFF();
   }
 
   virtual ~RayTracer_Generated();
@@ -87,6 +88,9 @@ public:
     float voxel_size,
     float time,
     LiteMath::float4x4 matrix);
+
+  virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer);
+  void ComputeFFCmd();
   
   struct MemLoc
   {
@@ -124,6 +128,7 @@ protected:
 
   virtual void InitAllGeneratedDescriptorSets_CastSingleRay();
   virtual void InitAllGeneratedDescriptorSets_GenSamples();
+  virtual void InitAllGeneratedDescriptorSets_ComputeFF();
 
   virtual void AssignBuffersToMemory(const std::vector<VkBuffer>& a_buffers, VkDeviceMemory a_mem);
 
@@ -168,11 +173,16 @@ protected:
   VkDescriptorSetLayout CastSingleRayMegaDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreateCastSingleRayMegaDSLayout();
   VkDescriptorSetLayout GenSampleDSLayout();
+  VkDescriptorSetLayout CreateComputeFFDSLayout();
   void InitKernel_CastSingleRayMega(const char* a_filePath);
 
   VkPipelineLayout      GenSamplesLayout   = VK_NULL_HANDLE;
   VkPipeline            GenSamplesPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout GenSamplesDSLayout = VK_NULL_HANDLE;
+
+  VkPipelineLayout      ComputeFFLayout    = VK_NULL_HANDLE;
+  VkPipeline            ComputeFFPipeline  = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout ComputeFFDSLayout  = VK_NULL_HANDLE;
 
 
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
@@ -183,7 +193,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[2];
+  VkDescriptorSet  m_allGeneratedDS[3];
 
   RayTracer_UBO_Data m_uboData;
   

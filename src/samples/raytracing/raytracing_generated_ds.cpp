@@ -29,14 +29,15 @@ void RayTracer_Generated::AllocateAllDescriptorSets()
   
   // allocate all descriptor sets
   //
-  VkDescriptorSetLayout layouts[2] = {};
+  VkDescriptorSetLayout layouts[3] = {};
   layouts[0] = CastSingleRayMegaDSLayout;
   layouts[1] = GenSamplesDSLayout;
+  layouts[2] = ComputeFFDSLayout;
 
   VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
   descriptorSetAllocateInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   descriptorSetAllocateInfo.descriptorPool     = m_dsPool;  
-  descriptorSetAllocateInfo.descriptorSetCount = 2;     
+  descriptorSetAllocateInfo.descriptorSetCount = 3;
   descriptorSetAllocateInfo.pSetLayouts        = layouts;
 
   auto tmpRes = vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, m_allGeneratedDS);
@@ -238,3 +239,49 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
 
   vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
 }
+
+void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
+{
+  std::array<VkDescriptorBufferInfo, 2> descriptorBufferInfo;
+  VkAccelerationStructureKHR accelStructs = {};
+  VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelInfo = {};
+  std::array<VkWriteDescriptorSet, 3> writeDescriptorSet;
+  {
+    VulkanRTX* pScene = dynamic_cast<VulkanRTX*>(m_pAccelStruct.get());
+    if(pScene == nullptr)
+      std::cout << "[RayTracer_Generated::InitAllGeneratedDescriptorSets_CastSingleRay]: fatal error, wrong accel struct type" << std::endl;
+    accelStructs = pScene->GetSceneAccelStruct();
+    descriptorAccelInfo = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,VK_NULL_HANDLE,1, &accelStructs};
+  }
+
+  writeDescriptorSet[0]                  = VkWriteDescriptorSet{};
+  writeDescriptorSet[0].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeDescriptorSet[0].dstSet           = m_allGeneratedDS[2];
+  writeDescriptorSet[0].dstBinding       = 0;
+  writeDescriptorSet[0].descriptorCount  = 1;
+  writeDescriptorSet[0].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+  writeDescriptorSet[0].pNext          = &descriptorAccelInfo;
+
+  std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {genSamplesData.outPointsBuffer, genSamplesData.indirectBuffer};
+
+  for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
+  {
+    descriptorBufferInfo[i]        = VkDescriptorBufferInfo{};
+    descriptorBufferInfo[i].buffer = buffers[i];
+    descriptorBufferInfo[i].offset = 0;
+    descriptorBufferInfo[i].range  = VK_WHOLE_SIZE;  
+
+    writeDescriptorSet[i + 1]                  = VkWriteDescriptorSet{};
+    writeDescriptorSet[i + 1].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet[i + 1].dstSet           = m_allGeneratedDS[2];
+    writeDescriptorSet[i + 1].dstBinding       = i + 1;
+    writeDescriptorSet[i + 1].descriptorCount  = 1;
+    writeDescriptorSet[i + 1].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptorSet[i + 1].pBufferInfo      = &descriptorBufferInfo[i];
+    writeDescriptorSet[i + 1].pImageInfo       = nullptr;
+    writeDescriptorSet[i + 1].pTexelBufferView = nullptr;
+  }
+
+  vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
+}
+

@@ -25,6 +25,7 @@ out gl_PerVertex { vec4 gl_Position; float gl_PointSize; };
 void main(void)
 {
     gl_Position   = params.mProjView * vec4((params.mModel * points[2 * gl_VertexIndex]).xyz, 1.0);
-    vOut.wNorm = (params.mModel * points[2 * gl_VertexIndex + 1]).xyz;
+    // vOut.wNorm = (params.mModel * points[2 * gl_VertexIndex + 1]).xyz;
+    vOut.wNorm = vec3(points[2 * gl_VertexIndex + 1].w);
     gl_PointSize = 2;
 }

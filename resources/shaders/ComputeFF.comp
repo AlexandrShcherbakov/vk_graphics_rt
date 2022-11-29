@@ -1,0 +1,66 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_ray_query : require
+
+#include "unpack_attributes.h"
+
+layout(binding = 0, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
+
+struct SamplePoint
+{
+  vec4 position;
+  vec4 normal;
+};
+
+layout(binding = 1, set = 0) buffer point_buf { SamplePoint points[]; };
+layout(binding = 2, set = 0) buffer indir { uint indirection_buf[]; };
+
+// RayScene intersection with 'm_pAccelStruct'
+//
+bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len)
+{
+  rayQueryEXT rayQuery;
+  rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
+  
+  while(rayQueryProceedEXT(rayQuery)) { }
+ 
+
+  return (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionTriangleEXT);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+  uint tid = uint(gl_GlobalInvocationID[0]); 
+  uint pointsCount = indirection_buf[0];
+  if (tid >= pointsCount)
+  {
+    return;
+  }
+
+  vec3 pos = points[tid].position.xyz;
+  vec3 normal = points[tid].normal.xyz;
+  uint count = 0;
+  for (uint i = 0; i < pointsCount; ++i)
+  {
+    if (i == tid)
+      continue;
+    vec3 target = points[i].position.xyz;
+    vec3 targetNormal = points[i].normal.xyz;
+    vec3 dir = target - pos;
+    if (dot(dir, normal) <= 0.0 || dot(dir, targetNormal) >= 0.0)
+      continue;
+    float len = length(dir);
+    dir /= len;
+    if (m_pAccelStruct_RayQuery_NearestHit(pos, dir, len))
+      count++;
+  }
+  // points[tid].normal.w = float(count) / float(pointsCount);
+  if (count > 10)
+    points[tid].normal.w = 1;
+}
+

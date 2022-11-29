@@ -110,6 +110,8 @@ void main()
   vec3 dir = voxelCenter - point;
   float len = length(dir);
   dir /= len;
+  dir = -offsetMask * offsetSign;
+  len = kgenArgs.voxelSize;
   if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len * 2.f, res, normal))
   {
     float targetLen = length(res - point);

@@ -39,6 +39,13 @@ RayTracer_Generated::~RayTracer_Generated()
   vkDestroyDescriptorSetLayout(device, GenSamplesDSLayout, nullptr);
   GenSamplesDSLayout = VK_NULL_HANDLE;
 
+  vkDestroyPipeline(device, ComputeFFPipeline, nullptr);
+  vkDestroyPipelineLayout(device, ComputeFFLayout, nullptr);
+  ComputeFFLayout   = VK_NULL_HANDLE;
+  ComputeFFPipeline = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, ComputeFFDSLayout, nullptr);
+  ComputeFFDSLayout = VK_NULL_HANDLE;
+
   vkDestroyPipeline(device, GenSamplesPipeline, nullptr);
   vkDestroyPipelineLayout(device, GenSamplesLayout, nullptr);
   GenSamplesLayout   = VK_NULL_HANDLE;
@@ -162,6 +169,39 @@ VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
   return layout;
 }
 
+VkDescriptorSetLayout RayTracer_Generated::CreateComputeFFDSLayout()
+{
+  std::array<VkDescriptorSetLayoutBinding, 3> dsBindings;
+
+  // binding for m_pAccelStruct
+  dsBindings[0].binding            = 0;
+  dsBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+  dsBindings[0].descriptorCount    = 1;
+  dsBindings[0].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings[0].pImmutableSamplers = nullptr;
+
+  dsBindings[1].binding            = 1;
+  dsBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[1].descriptorCount    = 1;
+  dsBindings[1].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings[1].pImmutableSamplers = nullptr;
+
+  dsBindings[2].binding            = 2;
+  dsBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[2].descriptorCount    = 1;
+  dsBindings[2].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings[2].pImmutableSamplers = nullptr;
+  
+  VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+  descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  descriptorSetLayoutCreateInfo.bindingCount = uint32_t(dsBindings.size());
+  descriptorSetLayoutCreateInfo.pBindings    = dsBindings.data();
+  
+  VkDescriptorSetLayout layout = nullptr;
+  VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, NULL, &layout));
+  return layout;
+}
+
 VkDescriptorSetLayout RayTracer_Generated::CreatecopyKernelFloatDSLayout()
 {
   std::array<VkDescriptorSetLayoutBinding, 2> dsBindings;
@@ -203,6 +243,12 @@ void RayTracer_Generated::InitKernel_CastSingleRayMega(const char* a_filePath)
   GenSamplesDSLayout = GenSampleDSLayout();
   GenSamplesLayout = m_pMaker->MakeLayout(device, { GenSamplesDSLayout }, 128);
   GenSamplesPipeline = m_pMaker->MakePipeline(device);
+
+  shaderPath = AlterShaderPath("../../../resources/shaders/ComputeFF.comp.spv");
+  m_pMaker->LoadShader(device, shaderPath.c_str(), nullptr, "main");
+  ComputeFFDSLayout = CreateComputeFFDSLayout();
+  ComputeFFLayout = m_pMaker->MakeLayout(device, { ComputeFFDSLayout }, 128);
+  ComputeFFPipeline = m_pMaker->MakePipeline(device);
 }
 
 
