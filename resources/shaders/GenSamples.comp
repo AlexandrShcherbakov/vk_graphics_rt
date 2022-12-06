@@ -12,6 +12,7 @@ layout(binding = 4, set = 0) buffer geom { vec4 geomTriangles[]; };
 layout(binding = 5, set = 0) buffer geomIndices { uvec3 indexBuffer[]; };
 layout(binding = 6, set = 0) buffer perInstMats { mat4 matrices[]; };
 layout(binding = 7, set = 0) buffer perInstInfo { uvec2 instInfo[]; };
+layout(binding = 8, set = 0) buffer primCounterCount { uint primCounter[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -121,6 +122,7 @@ void main()
     uint targetIdx = atomicAdd(indirect_buf[0], 1);
     out_points[targetIdx * 2] = vec4(res, startIdxId);
     out_points[targetIdx * 2 + 1] = vec4(normal, 0);
+    atomicAdd(primCounter[startIdxId], 1);
   }
   // else
   // {

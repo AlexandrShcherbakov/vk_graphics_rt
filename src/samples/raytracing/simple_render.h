@@ -226,6 +226,9 @@ protected:
   VkDeviceMemory indirectPointsMem = VK_NULL_HANDLE;
   VkBuffer samplePointsBuffer = VK_NULL_HANDLE;
   VkDeviceMemory samplePointsMem = VK_NULL_HANDLE;
+  VkBuffer primCounterBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory primCounterMem = VK_NULL_HANDLE;
+  uint32_t trianglesCount = 0;
 };
 
 

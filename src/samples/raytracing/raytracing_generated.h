@@ -41,7 +41,8 @@ public:
     VkBuffer vertex_buffer,
     VkBuffer index_buffer,
     VkBuffer matrices_buffer,
-    VkBuffer inst_info_buffer)
+    VkBuffer inst_info_buffer,
+    VkBuffer prim_counter_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -50,6 +51,7 @@ public:
     genSamplesData.indexBuffer = index_buffer;
     genSamplesData.matricesBuffer = matrices_buffer;
     genSamplesData.instInfoBuffer = inst_info_buffer;
+    genSamplesData.primCounterBuffer = prim_counter_buffer;
     InitAllGeneratedDescriptorSets_GenSamples();
     InitAllGeneratedDescriptorSets_ComputeFF();
   }
@@ -159,6 +161,7 @@ protected:
     VkBuffer indexBuffer = VK_NULL_HANDLE;
     VkBuffer matricesBuffer = VK_NULL_HANDLE;
     VkBuffer instInfoBuffer = VK_NULL_HANDLE;
+    VkBuffer primCounterBuffer = VK_NULL_HANDLE;
   } genSamplesData;
 
   struct MembersDataGPU

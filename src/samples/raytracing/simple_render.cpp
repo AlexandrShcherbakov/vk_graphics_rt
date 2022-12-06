@@ -322,6 +322,27 @@ void SimpleRender::CreateUniformBuffer()
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, samplePointsBuffer, samplePointsMem, 0));
   }
+  {
+    trianglesCount = 0;
+    for (uint32_t i = 0; i < m_pScnMgr->MeshesNum(); ++i)
+    {
+      trianglesCount += m_pScnMgr->GetMeshInfo(i).m_indNum;
+    }
+    trianglesCount /= 3;
+    VkMemoryRequirements memReq;
+    primCounterBuffer = vk_utils::createBuffer(m_device, sizeof(uint32_t) * trianglesCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &primCounterMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, primCounterBuffer, primCounterMem, 0));
+  }
 }
 
 void SimpleRender::UpdateUniformBuffer(float a_time)
