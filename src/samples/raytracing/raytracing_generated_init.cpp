@@ -106,58 +106,25 @@ VkDescriptorSetLayout RayTracer_Generated::CreateCastSingleRayMegaDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
 {
-  std::array<VkDescriptorSetLayoutBinding, 8> dsBindings;
+  const uint32_t BUFFERS_COUNT = 7;
+  std::array<VkDescriptorSetLayoutBinding, 1 + BUFFERS_COUNT> dsBindings;
 
-  // binding for out_color
+  // binding for m_pAccelStruct
   dsBindings[0].binding            = 0;
-  dsBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  dsBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   dsBindings[0].descriptorCount    = 1;
   dsBindings[0].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
   dsBindings[0].pImmutableSamplers = nullptr;
 
-  // binding for m_pAccelStruct
-  dsBindings[1].binding            = 1;
-  dsBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-  dsBindings[1].descriptorCount    = 1;
-  dsBindings[1].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[1].pImmutableSamplers = nullptr;
-
-  // binding for POD members stored in m_classDataBuffer
-  dsBindings[2].binding            = 2;
-  dsBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  dsBindings[2].descriptorCount    = 1;
-  dsBindings[2].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[2].pImmutableSamplers = nullptr;
-
-  dsBindings[3].binding            = 3;
-  dsBindings[3].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  dsBindings[3].descriptorCount    = 1;
-  dsBindings[3].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[3].pImmutableSamplers = nullptr;
-
-  dsBindings[4].binding            = 4;
-  dsBindings[4].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  dsBindings[4].descriptorCount    = 1;
-  dsBindings[4].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[4].pImmutableSamplers = nullptr;
-
-  dsBindings[5].binding            = 5;
-  dsBindings[5].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  dsBindings[5].descriptorCount    = 1;
-  dsBindings[5].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[5].pImmutableSamplers = nullptr;
-
-  dsBindings[6].binding            = 6;
-  dsBindings[6].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  dsBindings[6].descriptorCount    = 1;
-  dsBindings[6].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[6].pImmutableSamplers = nullptr;
-  
-  dsBindings[7].binding            = 7;
-  dsBindings[7].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  dsBindings[7].descriptorCount    = 1;
-  dsBindings[7].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
-  dsBindings[7].pImmutableSamplers = nullptr;
+  for (uint32_t i = 0; i < BUFFERS_COUNT; ++i)
+  {
+    const uint32_t bindingId = i + 1;
+    dsBindings[bindingId].binding            = bindingId;
+    dsBindings[bindingId].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    dsBindings[bindingId].descriptorCount    = 1;
+    dsBindings[bindingId].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+    dsBindings[bindingId].pImmutableSamplers = nullptr;  
+  }
   
   VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
   descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

@@ -4,8 +4,8 @@
 
 #include "unpack_attributes.h"
 
-layout(binding = 0, set = 0) buffer rand_points { vec4 points[]; };
-layout(binding = 1, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
+layout(binding = 0, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
+layout(binding = 1, set = 0) buffer rand_points { vec4 points[]; };
 layout(binding = 2, set = 0) buffer out_point { vec4 out_points[]; };
 layout(binding = 3, set = 0) buffer counters { uint indirect_buf[]; };
 layout(binding = 4, set = 0) buffer geom { vec4 geomTriangles[]; };
