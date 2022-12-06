@@ -168,10 +168,11 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
 
 void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
 {
-  std::array<VkDescriptorBufferInfo, 2> descriptorBufferInfo;
+  const uint32_t BUFFERS_COUNT = 4;
+  std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
   VkAccelerationStructureKHR accelStructs = {};
   VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelInfo = {};
-  std::array<VkWriteDescriptorSet, 3> writeDescriptorSet;
+  std::array<VkWriteDescriptorSet, 1 + BUFFERS_COUNT> writeDescriptorSet;
   {
     VulkanRTX* pScene = dynamic_cast<VulkanRTX*>(m_pAccelStruct.get());
     if(pScene == nullptr)
@@ -188,7 +189,12 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
   writeDescriptorSet[0].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   writeDescriptorSet[0].pNext          = &descriptorAccelInfo;
 
-  std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {genSamplesData.outPointsBuffer, genSamplesData.indirectBuffer};
+  std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {
+    genSamplesData.outPointsBuffer,
+    genSamplesData.indirectBuffer,
+    genSamplesData.vertexBuffer,
+    genSamplesData.primCounterBuffer
+  };
 
   for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
   {

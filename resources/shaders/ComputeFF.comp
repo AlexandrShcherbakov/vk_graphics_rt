@@ -14,6 +14,8 @@ struct SamplePoint
 
 layout(binding = 1, set = 0) buffer point_buf { SamplePoint points[]; };
 layout(binding = 2, set = 0) buffer indir { uint indirection_buf[]; };
+layout(binding = 3, set = 0) buffer geom { vec4 geomTriangles[]; };
+layout(binding = 4, set = 0) buffer primCounterCount { uint primCounter[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -45,6 +47,7 @@ void main()
   vec3 pos = points[tid].position.xyz;
   vec3 normal = points[tid].normal.xyz;
   uint count = 0;
+  float formFactorsSum = 0;
   for (uint i = 0; i < pointsCount; ++i)
   {
     if (i == tid)
@@ -52,15 +55,35 @@ void main()
     vec3 target = points[i].position.xyz;
     vec3 targetNormal = points[i].normal.xyz;
     vec3 dir = target - pos;
-    if (dot(dir, normal) <= 0.0 || dot(dir, targetNormal) >= 0.0)
-      continue;
     float len = length(dir);
+    if (len < 1e-2)
+      continue;
     dir /= len;
+    float cosTheta = dot(dir, normal);
+    if (cosTheta <= 0.0)
+      continue;
+    float cosTheta1 = dot(dir, targetNormal);
+    if (cosTheta1 >= 0.0)
+      continue;
     if (m_pAccelStruct_RayQuery_NearestHit(pos, dir, len))
+    {
+      vec4 p1 = (geomTriangles[uint(points[i].position.w + 0) * 2]);
+      vec4 p2 = (geomTriangles[uint(points[i].position.w + 1) * 2]);
+      vec4 p3 = (geomTriangles[uint(points[i].position.w + 2) * 2]);
+      float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
+      formFactorsSum += (cosTheta * -cosTheta1) / len / len * primArea;
       count++;
+    }
   }
   // points[tid].normal.w = float(count) / float(pointsCount);
-  if (count > 10)
-    points[tid].normal.w = 1;
+  vec4 p1 = (geomTriangles[uint(points[tid].position.w + 0) * 2]);
+  vec4 p2 = (geomTriangles[uint(points[tid].position.w + 1) * 2]);
+  vec4 p3 = (geomTriangles[uint(points[tid].position.w + 2) * 2]);
+  float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
+  formFactorsSum /= 3.1415926535897932;
+  formFactorsSum /= primArea;
+  // if (count > 10)
+  //   points[tid].normal.w = 1;
+  points[tid].normal.w = formFactorsSum;
 }
 
