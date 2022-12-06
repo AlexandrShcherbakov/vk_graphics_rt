@@ -15,7 +15,8 @@ layout(binding = 7, set = 0) buffer perInstInfo { uvec2 instInfo[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
-bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len, inout vec3 target, inout vec3 normal)
+bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len, inout vec3 target, inout vec3 normal,
+  inout uint startIdxId)
 {
   rayQueryEXT rayQuery;
   rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
@@ -41,6 +42,7 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
     const vec3 n2 = DecodeNormal(floatBitsToInt(p2.w));
     const vec3 n3 = DecodeNormal(floatBitsToInt(p3.w));
     normal = normalize(n1 * bars.x + n2 * bars.y + n3 * (1 - bars.x - bars.y));
+    startIdxId = primIdx * 3 + instInfo[instanceIdx].x;
 
     target = rayPos + rayDir * t;
     if (dot(normal, rayDir) >= 0.0)
@@ -112,11 +114,12 @@ void main()
   dir /= len;
   dir = -offsetMask * offsetSign;
   len = kgenArgs.voxelSize;
-  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len * 2.f, res, normal))
+  uint startIdxId;
+  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len * 2.f, res, normal, startIdxId))
   {
     float targetLen = length(res - point);
     uint targetIdx = atomicAdd(indirect_buf[0], 1);
-    out_points[targetIdx * 2] = vec4(res, 1);
+    out_points[targetIdx * 2] = vec4(res, startIdxId);
     out_points[targetIdx * 2 + 1] = vec4(normal, 0);
   }
   // else
