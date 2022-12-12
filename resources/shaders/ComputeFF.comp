@@ -16,6 +16,7 @@ layout(binding = 1, set = 0) buffer point_buf { SamplePoint points[]; };
 layout(binding = 2, set = 0) buffer indir { uint indirection_buf[]; };
 layout(binding = 3, set = 0) buffer geom { vec4 geomTriangles[]; };
 layout(binding = 4, set = 0) buffer primCounterCount { uint primCounter[]; };
+layout(binding = 5, set = 0) buffer ffRowBuf { float ffRow[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -38,31 +39,40 @@ layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 layout( push_constant ) uniform kernelArgs
 {
   uint perFacePointsCount;
+  uint voxelsCount;
+  uint voxelId;
 } kgenArgs;
 
 void main()
 {
   uint tid = uint(gl_LocalInvocationID[0]);
-  uint curVoxelId = uint(gl_WorkGroupID[0]);
-  uint pointsCount = indirection_buf[curVoxelId * 4];
+  uint pointsCount = indirection_buf[kgenArgs.voxelId * 4];
   if (tid >= pointsCount)
   {
     return;
   }
 
   uint pointsPerVoxel = 6 * kgenArgs.perFacePointsCount;
-  uint pointsOffset = curVoxelId * pointsPerVoxel;
+  uint pointsOffset = kgenArgs.voxelId * pointsPerVoxel;
+  uint globalPointsCount = pointsPerVoxel * kgenArgs.voxelsCount;
 
   vec3 pos = points[tid + pointsOffset].position.xyz;
   vec3 normal = points[tid + pointsOffset].normal.xyz;
   uint count = 0;
   float formFactorsSum = 0;
-  for (uint voxelId = 0; voxelId < gl_NumWorkGroups[0]; ++voxelId)
+
+  vec4 p1 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 0) * 2]);
+  vec4 p2 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 1) * 2]);
+  vec4 p3 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 2) * 2]);
+  float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
+  float geomMult = 1.0 / primArea / 3.1415926535897932;
+
+  for (uint voxelId = kgenArgs.voxelId; voxelId < kgenArgs.voxelsCount; ++voxelId)
   {
     uint curOffset = voxelId * pointsPerVoxel;
     for (uint i = 0; i < indirection_buf[voxelId * 4]; ++i)
     {
-      if (voxelId == curVoxelId && i == tid)
+      if (voxelId == kgenArgs.voxelId && i == tid)
         continue;
       vec3 target = points[i + curOffset].position.xyz;
       vec3 targetNormal = points[i + curOffset].normal.xyz;
@@ -83,20 +93,13 @@ void main()
         vec4 p2 = (geomTriangles[uint(points[i].position.w + 1) * 2]);
         vec4 p3 = (geomTriangles[uint(points[i].position.w + 2) * 2]);
         float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
-        formFactorsSum += (cosTheta * -cosTheta1) / len / len * primArea;
+        float ff = (cosTheta * -cosTheta1) / len / len * primArea * geomMult;
+        formFactorsSum += ff;
         count++;
+        ffRow[tid * globalPointsCount + curOffset + i] += ff;
       }
     }
   }
-  // points[tid].normal.w = float(count) / float(pointsCount);
-  vec4 p1 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 0) * 2]);
-  vec4 p2 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 1) * 2]);
-  vec4 p3 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 2) * 2]);
-  float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
-  formFactorsSum /= 3.1415926535897932;
-  formFactorsSum /= primArea;
-  // if (count > 10)
-  //   points[tid].normal.w = 1;
   points[tid + pointsOffset].normal.w = formFactorsSum;
 }
 

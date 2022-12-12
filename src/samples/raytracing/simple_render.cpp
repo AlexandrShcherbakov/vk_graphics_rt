@@ -348,6 +348,22 @@ void SimpleRender::CreateUniformBuffer()
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, primCounterBuffer, primCounterMem, 0));
   }
+
+  {
+    VkMemoryRequirements memReq;
+    FFRowBuffer = vk_utils::createBuffer(m_device, sizeof(float) * maxPointsCount * PER_VOXEL_POINTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &FFRowMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, FFRowBuffer, FFRowMem, 0));
+  }
 }
 
 void SimpleRender::UpdateUniformBuffer(float a_time)

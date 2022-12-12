@@ -150,14 +150,20 @@ void RayTracer_Generated::ComputeFFCmd(uint32_t points_per_voxel, uint32_t voxel
   struct KernelArgsPC
   {
     uint32_t perFacePointsCount;
+    uint32_t voxelsCount;
+    uint32_t voxelId;
   } pcData;
 
   pcData.perFacePointsCount  = points_per_voxel;
-
-  vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  pcData.voxelsCount = voxels_count;
 
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, voxels_count, 1, 1);
+  for (uint32_t i = 0; i < voxels_count; ++i)
+  {
+    pcData.voxelId = i;
+    vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+    vkCmdDispatch    (m_currCmdBuffer, 1, 1, 1);
+  }
 }
 
 void RayTracer_Generated::copyKernelFloatCmd(uint32_t length)
