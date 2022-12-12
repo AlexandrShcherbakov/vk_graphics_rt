@@ -74,12 +74,6 @@ layout( push_constant ) uniform kernelArgs
 void main()
 {
   uint tid = uint(gl_GlobalInvocationID[0]); 
-  if (tid == 0)
-  {
-    indirect_buf[1] = 1;
-    indirect_buf[2] = 0;
-    indirect_buf[3] = 0;
-  }
 
   uvec3 voxelsExtend = uvec3(ceil((kgenArgs.bmax - kgenArgs.bmin) / kgenArgs.voxelSize));
   uint pointsCount = voxelsExtend.x * voxelsExtend.y * voxelsExtend.z * 6 * kgenArgs.perFacePointsCount;
@@ -97,6 +91,17 @@ void main()
   tid /= voxelsExtend.y;
   uint xVoxel = tid % voxelsExtend.x;
   tid /= voxelsExtend.x;
+
+  uint voxelIdx = (xVoxel * voxelsExtend.y + yVoxel) * voxelsExtend.z + zVoxel;
+  uint indirectOffset = voxelIdx * 4;
+  if (onSurfaceIdx == 0 && surfaceIdx == 0)
+  {
+    indirect_buf[indirectOffset + 1] = 1;
+    indirect_buf[indirectOffset + 2] = 0;
+    indirect_buf[indirectOffset + 3] = 0;
+  }
+  uint pointsPerVoxel = 6 * kgenArgs.perFacePointsCount;
+  uint pointsOffset = voxelIdx * pointsPerVoxel;
 
   vec3 voxelCenter = vec3(xVoxel, yVoxel, zVoxel) * kgenArgs.voxelSize + kgenArgs.bmin + kgenArgs.voxelSize * 0.5;
   uint axis = surfaceIdx % 3;
@@ -119,7 +124,7 @@ void main()
   if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len * 2.f, res, normal, startIdxId))
   {
     float targetLen = length(res - point);
-    uint targetIdx = atomicAdd(indirect_buf[0], 1);
+    uint targetIdx = atomicAdd(indirect_buf[indirectOffset + 0], 1) + pointsOffset;
     out_points[targetIdx * 2] = vec4(res, startIdxId);
     out_points[targetIdx * 2 + 1] = vec4(normal, 0);
     atomicAdd(primCounter[startIdxId], 1);

@@ -299,7 +299,7 @@ void SimpleRender::CreateUniformBuffer()
   }
   {
     VkMemoryRequirements memReq;
-    indirectPointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    indirectPointsBuffer = vk_utils::createBuffer(m_device, sizeof(uint4) * voxelsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -418,12 +418,19 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
 
       vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
                               &pointsdSet, 0, VK_NULL_HANDLE);
-      pushConst2M.model = float4x4();
+
+      struct KernelArgsPC
+      {
+        LiteMath::float4x4 projView;
+        uint32_t perFacePointsCount;
+      } pcData;
+      pcData.projView = pushConst2M.projView;
+      pcData.perFacePointsCount = PER_SURFACE_POINTS;
       vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
-                          sizeof(pushConst2M), &pushConst2M);
+                          sizeof(pcData), &pcData);
       
       // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
-      vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, 1, sizeof(uint32_t) * 4);
+      vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
     }
 
     vkCmdEndRenderPass(a_cmdBuff);

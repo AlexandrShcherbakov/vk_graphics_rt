@@ -91,8 +91,8 @@ public:
     float time,
     LiteMath::float4x4 matrix);
 
-  virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer);
-  void ComputeFFCmd();
+  virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count);
+  void ComputeFFCmd(uint32_t points_per_voxel, uint32_t voxels_count);
   
   struct MemLoc
   {

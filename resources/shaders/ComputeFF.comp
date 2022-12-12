@@ -35,55 +35,68 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
+layout( push_constant ) uniform kernelArgs
+{
+  uint perFacePointsCount;
+} kgenArgs;
+
 void main()
 {
-  uint tid = uint(gl_GlobalInvocationID[0]); 
-  uint pointsCount = indirection_buf[0];
+  uint tid = uint(gl_LocalInvocationID[0]);
+  uint curVoxelId = uint(gl_WorkGroupID[0]);
+  uint pointsCount = indirection_buf[curVoxelId * 4];
   if (tid >= pointsCount)
   {
     return;
   }
 
-  vec3 pos = points[tid].position.xyz;
-  vec3 normal = points[tid].normal.xyz;
+  uint pointsPerVoxel = 6 * kgenArgs.perFacePointsCount;
+  uint pointsOffset = curVoxelId * pointsPerVoxel;
+
+  vec3 pos = points[tid + pointsOffset].position.xyz;
+  vec3 normal = points[tid + pointsOffset].normal.xyz;
   uint count = 0;
   float formFactorsSum = 0;
-  for (uint i = 0; i < pointsCount; ++i)
+  for (uint voxelId = 0; voxelId < gl_NumWorkGroups[0]; ++voxelId)
   {
-    if (i == tid)
-      continue;
-    vec3 target = points[i].position.xyz;
-    vec3 targetNormal = points[i].normal.xyz;
-    vec3 dir = target - pos;
-    float len = length(dir);
-    if (len < 1e-2)
-      continue;
-    dir /= len;
-    float cosTheta = dot(dir, normal);
-    if (cosTheta <= 0.0)
-      continue;
-    float cosTheta1 = dot(dir, targetNormal);
-    if (cosTheta1 >= 0.0)
-      continue;
-    if (m_pAccelStruct_RayQuery_NearestHit(pos, dir, len))
+    uint curOffset = voxelId * pointsPerVoxel;
+    for (uint i = 0; i < indirection_buf[voxelId * 4]; ++i)
     {
-      vec4 p1 = (geomTriangles[uint(points[i].position.w + 0) * 2]);
-      vec4 p2 = (geomTriangles[uint(points[i].position.w + 1) * 2]);
-      vec4 p3 = (geomTriangles[uint(points[i].position.w + 2) * 2]);
-      float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
-      formFactorsSum += (cosTheta * -cosTheta1) / len / len * primArea;
-      count++;
+      if (voxelId == curVoxelId && i == tid)
+        continue;
+      vec3 target = points[i + curOffset].position.xyz;
+      vec3 targetNormal = points[i + curOffset].normal.xyz;
+      vec3 dir = target - pos;
+      float len = length(dir);
+      if (len < 1e-2)
+        continue;
+      dir /= len;
+      float cosTheta = dot(dir, normal);
+      if (cosTheta <= 0.0)
+        continue;
+      float cosTheta1 = dot(dir, targetNormal);
+      if (cosTheta1 >= 0.0)
+        continue;
+      if (m_pAccelStruct_RayQuery_NearestHit(pos, dir, len))
+      {
+        vec4 p1 = (geomTriangles[uint(points[i].position.w + 0) * 2]);
+        vec4 p2 = (geomTriangles[uint(points[i].position.w + 1) * 2]);
+        vec4 p3 = (geomTriangles[uint(points[i].position.w + 2) * 2]);
+        float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
+        formFactorsSum += (cosTheta * -cosTheta1) / len / len * primArea;
+        count++;
+      }
     }
   }
   // points[tid].normal.w = float(count) / float(pointsCount);
-  vec4 p1 = (geomTriangles[uint(points[tid].position.w + 0) * 2]);
-  vec4 p2 = (geomTriangles[uint(points[tid].position.w + 1) * 2]);
-  vec4 p3 = (geomTriangles[uint(points[tid].position.w + 2) * 2]);
+  vec4 p1 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 0) * 2]);
+  vec4 p2 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 1) * 2]);
+  vec4 p3 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 2) * 2]);
   float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
   formFactorsSum /= 3.1415926535897932;
   formFactorsSum /= primArea;
   // if (count > 10)
   //   points[tid].normal.w = 1;
-  points[tid].normal.w = formFactorsSum;
+  points[tid + pointsOffset].normal.w = formFactorsSum;
 }
 

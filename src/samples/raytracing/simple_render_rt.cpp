@@ -214,11 +214,11 @@ void SimpleRender::TraceGenSamples()
     beginCommandBufferInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
-    vkCmdFillBuffer(commandBuffer, indirectPointsBuffer, 0, sizeof(uint32_t) * 4, 0);
+    vkCmdFillBuffer(commandBuffer, indirectPointsBuffer, 0, sizeof(uint32_t) * 4 * voxelsCount, 0);
     vkCmdFillBuffer(commandBuffer, primCounterBuffer, 0, sizeof(uint32_t) * trianglesCount, 0);
     m_pRayTracerGPU->GenSamplesCmd(commandBuffer, PER_SURFACE_POINTS,
       to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), VOXEL_SIZE, m_uniforms.time, m_pScnMgr->GetInstanceMatrix(0));
-    m_pRayTracerGPU->ComputeFFCmd(commandBuffer);
+    m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, voxelsCount);
 
     vkEndCommandBuffer(commandBuffer);
 
