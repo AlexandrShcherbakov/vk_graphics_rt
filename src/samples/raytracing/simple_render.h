@@ -217,8 +217,8 @@ protected:
   void SetupDeviceExtensions();
   void SetupValidationLayers();
   void GetBbox();
-  const uint32_t MAX_POINTS_COUNT = 1000000;
   const uint32_t PER_SURFACE_POINTS = 16;
+  const uint32_t PER_VOXEL_POINTS = PER_SURFACE_POINTS * 6;
   uint32_t pointsToDraw = 0;
   VkBuffer pointsBuffer = VK_NULL_HANDLE;
   VkDeviceMemory pointsMem = VK_NULL_HANDLE;
@@ -229,6 +229,10 @@ protected:
   VkBuffer primCounterBuffer = VK_NULL_HANDLE;
   VkDeviceMemory primCounterMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
+  const float VOXEL_SIZE = 0.25f;
+  LiteMath::uint3 voxelsGrid;
+  uint32_t voxelsCount = 0;
+  uint32_t maxPointsCount = 0;
 };
 
 

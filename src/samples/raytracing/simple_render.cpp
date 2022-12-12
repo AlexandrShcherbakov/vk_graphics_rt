@@ -267,6 +267,11 @@ void SimpleRender::CreateUniformBuffer()
 
   UpdateUniformBuffer(0.0f);
 
+  float3 gridF = to_float3((sceneBbox.boxMax - sceneBbox.boxMin) / VOXEL_SIZE);
+  voxelsGrid = uint3(std::ceil(gridF.x), std::ceil(gridF.y), std::ceil(gridF.z));
+  voxelsCount = voxelsGrid.x * voxelsGrid.y * voxelsGrid.z;
+  maxPointsCount = voxelsCount * 6 * PER_SURFACE_POINTS;
+
   {
     VkMemoryRequirements memReq;
     pointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * PER_SURFACE_POINTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
@@ -309,7 +314,7 @@ void SimpleRender::CreateUniformBuffer()
   }
   {
     VkMemoryRequirements memReq;
-    samplePointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * MAX_POINTS_COUNT, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    samplePointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * 2 * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
