@@ -43,7 +43,7 @@ public:
     VkBuffer matrices_buffer,
     VkBuffer inst_info_buffer,
     VkBuffer prim_counter_buffer,
-    VkBuffer ff_row_buffer)
+    VkBuffer ff_raw_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -53,7 +53,7 @@ public:
     genSamplesData.matricesBuffer = matrices_buffer;
     genSamplesData.instInfoBuffer = inst_info_buffer;
     genSamplesData.primCounterBuffer = prim_counter_buffer;
-    ffData.rowBuffer = ff_row_buffer;
+    ffData.rawBuffer = ff_raw_buffer;
     InitAllGeneratedDescriptorSets_GenSamples();
     InitAllGeneratedDescriptorSets_ComputeFF();
   }
@@ -168,7 +168,7 @@ protected:
 
   struct FFData
   {
-    VkBuffer rowBuffer = VK_NULL_HANDLE;
+    VkBuffer rawBuffer = VK_NULL_HANDLE;
   } ffData;
 
   struct MembersDataGPU

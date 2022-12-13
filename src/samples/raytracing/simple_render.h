@@ -228,8 +228,8 @@ protected:
   VkDeviceMemory samplePointsMem = VK_NULL_HANDLE;
   VkBuffer primCounterBuffer = VK_NULL_HANDLE;
   VkDeviceMemory primCounterMem = VK_NULL_HANDLE;
-  VkBuffer FFRowBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory FFRowMem = VK_NULL_HANDLE;
+  VkBuffer FFRawBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory FFRawMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
   const float VOXEL_SIZE = 0.25f;
   LiteMath::uint3 voxelsGrid;

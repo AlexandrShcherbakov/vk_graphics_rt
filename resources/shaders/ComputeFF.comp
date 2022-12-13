@@ -16,7 +16,7 @@ layout(binding = 1, set = 0) buffer point_buf { SamplePoint points[]; };
 layout(binding = 2, set = 0) buffer indir { uint indirection_buf[]; };
 layout(binding = 3, set = 0) buffer geom { vec4 geomTriangles[]; };
 layout(binding = 4, set = 0) buffer primCounterCount { uint primCounter[]; };
-layout(binding = 5, set = 0) buffer ffRowBuf { float ffRow[]; };
+layout(binding = 5, set = 0) buffer ffRawBuf { float ffRaw[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -96,7 +96,7 @@ void main()
         float ff = (cosTheta * -cosTheta1) / len / len * primArea * geomMult;
         formFactorsSum += ff;
         count++;
-        ffRow[tid * globalPointsCount + curOffset + i] += ff;
+        ffRaw[(pointsOffset + tid) * globalPointsCount + curOffset + i] = ff;
       }
     }
   }

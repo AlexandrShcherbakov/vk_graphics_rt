@@ -194,7 +194,7 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
     genSamplesData.indirectBuffer,
     genSamplesData.vertexBuffer,
     genSamplesData.primCounterBuffer,
-    ffData.rowBuffer
+    ffData.rawBuffer
   };
 
   for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
