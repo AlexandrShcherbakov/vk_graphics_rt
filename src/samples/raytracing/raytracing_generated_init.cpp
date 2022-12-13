@@ -177,7 +177,7 @@ VkDescriptorSetLayout RayTracer_Generated::CreateComputeFFDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::CreateClusterizeFFDSLayout()
 {
-  const uint32_t BUFFERS_COUNT = 6;
+  const uint32_t BUFFERS_COUNT = 7;
   std::array<VkDescriptorSetLayoutBinding, BUFFERS_COUNT> dsBindings;
 
   for (uint32_t i = 0; i < BUFFERS_COUNT; ++i)

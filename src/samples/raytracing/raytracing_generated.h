@@ -45,7 +45,8 @@ public:
     VkBuffer inst_info_buffer,
     VkBuffer prim_counter_buffer,
     VkBuffer ff_raw_buffer,
-    VkBuffer areas_buffer)
+    VkBuffer areas_buffer,
+    VkBuffer ff_clustered_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -57,6 +58,7 @@ public:
     genSamplesData.primCounterBuffer = prim_counter_buffer;
     ffData.rawBuffer = ff_raw_buffer;
     ffData.areas = areas_buffer;
+    ffData.clusteredBuffer = ff_clustered_buffer;
     InitAllGeneratedDescriptorSets_GenSamples();
     InitAllGeneratedDescriptorSets_ComputeFF();
     InitAllGeneratedDescriptorSets_ClusterizeFF();
@@ -175,6 +177,7 @@ protected:
   {
     VkBuffer rawBuffer = VK_NULL_HANDLE;
     VkBuffer areas = VK_NULL_HANDLE;
+    VkBuffer clusteredBuffer = VK_NULL_HANDLE;
   } ffData;
 
   struct MembersDataGPU

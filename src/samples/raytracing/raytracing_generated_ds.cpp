@@ -221,7 +221,7 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
 
 void RayTracer_Generated::InitAllGeneratedDescriptorSets_ClusterizeFF()
 {
-  const uint32_t BUFFERS_COUNT = 6;
+  const uint32_t BUFFERS_COUNT = 7;
   std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
   std::array<VkWriteDescriptorSet, BUFFERS_COUNT> writeDescriptorSet;
 
@@ -231,7 +231,8 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ClusterizeFF()
     genSamplesData.vertexBuffer,
     genSamplesData.primCounterBuffer,
     ffData.rawBuffer,
-    ffData.areas
+    ffData.areas,
+    ffData.clusteredBuffer
   };
 
   for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
