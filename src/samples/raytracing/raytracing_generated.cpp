@@ -143,29 +143,6 @@ void RayTracer_Generated::GenSamplesCmd(uint32_t points_per_voxel,
   vkCmdDispatch    (m_currCmdBuffer, (1000000 + blockSizeX - 1) / blockSizeX, 1, 1);
 }
 
-void RayTracer_Generated::ComputeFFCmd(uint32_t points_per_voxel, uint32_t voxels_count)
-{
-  uint32_t blockSizeX = 256;
-
-  struct KernelArgsPC
-  {
-    uint32_t perFacePointsCount;
-    uint32_t voxelsCount;
-    uint32_t voxelId;
-  } pcData;
-
-  pcData.perFacePointsCount  = points_per_voxel;
-  pcData.voxelsCount = voxels_count;
-
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFPipeline);
-  for (uint32_t i = 0; i < voxels_count; ++i)
-  {
-    pcData.voxelId = i;
-    vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-    vkCmdDispatch    (m_currCmdBuffer, 1, 1, 1);
-  }
-}
-
 void RayTracer_Generated::copyKernelFloatCmd(uint32_t length)
 {
   uint32_t blockSizeX = MEMCPY_BLOCK_SIZE;
@@ -248,7 +225,29 @@ void RayTracer_Generated::ComputeFFCmd(VkCommandBuffer a_commandBuffer, uint32_t
 {
   m_currCmdBuffer = a_commandBuffer;
   VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
-  vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
-  ComputeFFCmd(points_per_voxel, voxels_count);
+  uint32_t blockSizeX = 256;
+
+  struct KernelArgsPC
+  {
+    uint32_t perFacePointsCount;
+    uint32_t voxelsCount;
+    uint32_t voxelId;
+  } pcData;
+
+  pcData.perFacePointsCount  = points_per_voxel;
+  pcData.voxelsCount = voxels_count;
+
+  for (uint32_t i = 0; i < voxels_count; ++i)
+  {
+    pcData.voxelId = i;
+    vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
+    vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+    vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFPipeline);
+    vkCmdDispatch    (m_currCmdBuffer, 1, 1, 1);
+
+    vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ClusterizeFFLayout, 0, 1, &m_allGeneratedDS[3], 0, nullptr);
+    vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ClusterizeFFPipeline);
+    vkCmdDispatch    (m_currCmdBuffer, voxels_count - i, 1, 1);
+  }
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }

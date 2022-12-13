@@ -219,6 +219,7 @@ protected:
   void GetBbox();
   const uint32_t PER_SURFACE_POINTS = 8;
   const uint32_t PER_VOXEL_POINTS = PER_SURFACE_POINTS * 6;
+  const uint32_t PER_VOXEL_CLUSTERS = 6;
   uint32_t pointsToDraw = 0;
   VkBuffer pointsBuffer = VK_NULL_HANDLE;
   VkDeviceMemory pointsMem = VK_NULL_HANDLE;
@@ -230,10 +231,15 @@ protected:
   VkDeviceMemory primCounterMem = VK_NULL_HANDLE;
   VkBuffer FFRawBuffer = VK_NULL_HANDLE;
   VkDeviceMemory FFRawMem = VK_NULL_HANDLE;
+  VkBuffer FFClusteredBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory FFClusteredMem = VK_NULL_HANDLE;
+  VkBuffer areasBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory areasMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
   const float VOXEL_SIZE = 0.25f;
   LiteMath::uint3 voxelsGrid;
   uint32_t voxelsCount = 0;
+  uint32_t clustersCount = 0;
   uint32_t maxPointsCount = 0;
 };
 

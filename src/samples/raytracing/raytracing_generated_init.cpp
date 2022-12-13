@@ -46,6 +46,13 @@ RayTracer_Generated::~RayTracer_Generated()
   vkDestroyDescriptorSetLayout(device, ComputeFFDSLayout, nullptr);
   ComputeFFDSLayout = VK_NULL_HANDLE;
 
+  vkDestroyPipeline(device, ClusterizeFFPipeline, nullptr);
+  vkDestroyPipelineLayout(device, ClusterizeFFLayout, nullptr);
+  ClusterizeFFLayout   = VK_NULL_HANDLE;
+  ClusterizeFFPipeline = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, ClusterizeFFDSLayout, nullptr);
+  ClusterizeFFDSLayout = VK_NULL_HANDLE;
+
   vkDestroyPipeline(device, GenSamplesPipeline, nullptr);
   vkDestroyPipelineLayout(device, GenSamplesLayout, nullptr);
   GenSamplesLayout   = VK_NULL_HANDLE;
@@ -168,6 +175,30 @@ VkDescriptorSetLayout RayTracer_Generated::CreateComputeFFDSLayout()
   return layout;
 }
 
+VkDescriptorSetLayout RayTracer_Generated::CreateClusterizeFFDSLayout()
+{
+  const uint32_t BUFFERS_COUNT = 6;
+  std::array<VkDescriptorSetLayoutBinding, BUFFERS_COUNT> dsBindings;
+
+  for (uint32_t i = 0; i < BUFFERS_COUNT; ++i)
+  {
+    dsBindings[i].binding            = i;
+    dsBindings[i].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    dsBindings[i].descriptorCount    = 1;
+    dsBindings[i].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+    dsBindings[i].pImmutableSamplers = nullptr;  
+  }
+  
+  VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+  descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  descriptorSetLayoutCreateInfo.bindingCount = uint32_t(dsBindings.size());
+  descriptorSetLayoutCreateInfo.pBindings    = dsBindings.data();
+  
+  VkDescriptorSetLayout layout = nullptr;
+  VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, NULL, &layout));
+  return layout;
+}
+
 VkDescriptorSetLayout RayTracer_Generated::CreatecopyKernelFloatDSLayout()
 {
   std::array<VkDescriptorSetLayoutBinding, 2> dsBindings;
@@ -215,6 +246,12 @@ void RayTracer_Generated::InitKernel_CastSingleRayMega(const char* a_filePath)
   ComputeFFDSLayout = CreateComputeFFDSLayout();
   ComputeFFLayout = m_pMaker->MakeLayout(device, { ComputeFFDSLayout }, 128);
   ComputeFFPipeline = m_pMaker->MakePipeline(device);
+
+  shaderPath = AlterShaderPath("../../../resources/shaders/ClusterizeFF.comp.spv");
+  m_pMaker->LoadShader(device, shaderPath.c_str(), nullptr, "main");
+  ClusterizeFFDSLayout = CreateClusterizeFFDSLayout();
+  ClusterizeFFLayout = m_pMaker->MakeLayout(device, { ClusterizeFFDSLayout }, 128);
+  ClusterizeFFPipeline = m_pMaker->MakePipeline(device);
 }
 
 

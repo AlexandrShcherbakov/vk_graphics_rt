@@ -329,9 +329,9 @@ void SimpleRender::CreateUniformBuffer()
   }
   {
     trianglesCount = 0;
-    for (uint32_t i = 0; i < m_pScnMgr->MeshesNum(); ++i)
+    for (uint32_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
     {
-      trianglesCount += m_pScnMgr->GetMeshInfo(i).m_indNum;
+      trianglesCount += m_pScnMgr->GetMeshInfo(m_pScnMgr->GetInstanceInfo(i).mesh_id).m_indNum;
     }
     trianglesCount /= 3;
     VkMemoryRequirements memReq;
@@ -363,6 +363,39 @@ void SimpleRender::CreateUniformBuffer()
     VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &FFRawMem));
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, FFRawBuffer, FFRawMem, 0));
+  }
+
+  {
+    clustersCount = voxelsCount * PER_VOXEL_CLUSTERS;
+    VkMemoryRequirements memReq;
+    FFClusteredBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &FFClusteredMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, FFClusteredBuffer, FFClusteredMem, 0));
+  }
+
+  {
+    VkMemoryRequirements memReq;
+    areasBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &areasMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, areasBuffer, areasMem, 0));
   }
 }
 

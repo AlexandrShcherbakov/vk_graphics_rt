@@ -1,6 +1,7 @@
 #ifndef MAIN_CLASS_DECL_RayTracer_H
 #define MAIN_CLASS_DECL_RayTracer_H
 
+#include <array>
 #include <vector>
 #include <memory>
 #include <string>
@@ -43,7 +44,8 @@ public:
     VkBuffer matrices_buffer,
     VkBuffer inst_info_buffer,
     VkBuffer prim_counter_buffer,
-    VkBuffer ff_raw_buffer)
+    VkBuffer ff_raw_buffer,
+    VkBuffer areas_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -54,8 +56,10 @@ public:
     genSamplesData.instInfoBuffer = inst_info_buffer;
     genSamplesData.primCounterBuffer = prim_counter_buffer;
     ffData.rawBuffer = ff_raw_buffer;
+    ffData.areas = areas_buffer;
     InitAllGeneratedDescriptorSets_GenSamples();
     InitAllGeneratedDescriptorSets_ComputeFF();
+    InitAllGeneratedDescriptorSets_ClusterizeFF();
   }
 
   virtual ~RayTracer_Generated();
@@ -133,6 +137,7 @@ protected:
   virtual void InitAllGeneratedDescriptorSets_CastSingleRay();
   virtual void InitAllGeneratedDescriptorSets_GenSamples();
   virtual void InitAllGeneratedDescriptorSets_ComputeFF();
+  virtual void InitAllGeneratedDescriptorSets_ClusterizeFF();
 
   virtual void AssignBuffersToMemory(const std::vector<VkBuffer>& a_buffers, VkDeviceMemory a_mem);
 
@@ -169,6 +174,7 @@ protected:
   struct FFData
   {
     VkBuffer rawBuffer = VK_NULL_HANDLE;
+    VkBuffer areas = VK_NULL_HANDLE;
   } ffData;
 
   struct MembersDataGPU
@@ -184,6 +190,7 @@ protected:
   VkDescriptorSetLayout CreateCastSingleRayMegaDSLayout();
   VkDescriptorSetLayout GenSampleDSLayout();
   VkDescriptorSetLayout CreateComputeFFDSLayout();
+  VkDescriptorSetLayout CreateClusterizeFFDSLayout();
   void InitKernel_CastSingleRayMega(const char* a_filePath);
 
   VkPipelineLayout      GenSamplesLayout   = VK_NULL_HANDLE;
@@ -194,6 +201,10 @@ protected:
   VkPipeline            ComputeFFPipeline  = VK_NULL_HANDLE; 
   VkDescriptorSetLayout ComputeFFDSLayout  = VK_NULL_HANDLE;
 
+  VkPipelineLayout      ClusterizeFFLayout    = VK_NULL_HANDLE;
+  VkPipeline            ClusterizeFFPipeline  = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout ClusterizeFFDSLayout  = VK_NULL_HANDLE;
+
 
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
 
@@ -203,7 +214,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[3];
+  std::array<VkDescriptorSet, 4>  m_allGeneratedDS;
 
   RayTracer_UBO_Data m_uboData;
   

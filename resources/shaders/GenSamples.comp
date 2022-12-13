@@ -43,7 +43,7 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
     const vec3 n2 = DecodeNormal(floatBitsToInt(p2.w));
     const vec3 n3 = DecodeNormal(floatBitsToInt(p3.w));
     normal = normalize(n1 * bars.x + n2 * bars.y + n3 * (1 - bars.x - bars.y));
-    startIdxId = primIdx * 3 + instInfo[instanceIdx].x;
+    startIdxId = primIdx + instInfo[instanceIdx].x / 3;
 
     target = rayPos + rayDir * t;
     if (dot(normal, rayDir) >= 0.0)

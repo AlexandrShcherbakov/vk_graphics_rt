@@ -21,7 +21,7 @@ void RayTracer_Generated::AllocateAllDescriptorSets()
 
   VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
   descriptorPoolCreateInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  descriptorPoolCreateInfo.maxSets       = 1 + 2; // add 1 to prevent zero case and one more for internal needs
+  descriptorPoolCreateInfo.maxSets       = 1 + 10; // add 1 to prevent zero case and one more for internal needs
   descriptorPoolCreateInfo.poolSizeCount = 1;
   descriptorPoolCreateInfo.pPoolSizes    = &buffersSize;
   
@@ -29,18 +29,19 @@ void RayTracer_Generated::AllocateAllDescriptorSets()
   
   // allocate all descriptor sets
   //
-  VkDescriptorSetLayout layouts[3] = {};
+  VkDescriptorSetLayout layouts[4] = {};
   layouts[0] = CastSingleRayMegaDSLayout;
   layouts[1] = GenSamplesDSLayout;
   layouts[2] = ComputeFFDSLayout;
+  layouts[3] = ClusterizeFFDSLayout;
 
   VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
   descriptorSetAllocateInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   descriptorSetAllocateInfo.descriptorPool     = m_dsPool;  
-  descriptorSetAllocateInfo.descriptorSetCount = 3;
+  descriptorSetAllocateInfo.descriptorSetCount = m_allGeneratedDS.size();
   descriptorSetAllocateInfo.pSetLayouts        = layouts;
 
-  auto tmpRes = vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, m_allGeneratedDS);
+  auto tmpRes = vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, m_allGeneratedDS.data());
   VK_CHECK_RESULT(tmpRes);
 }
 
@@ -218,3 +219,38 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
   vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
 }
 
+void RayTracer_Generated::InitAllGeneratedDescriptorSets_ClusterizeFF()
+{
+  const uint32_t BUFFERS_COUNT = 6;
+  std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
+  std::array<VkWriteDescriptorSet, BUFFERS_COUNT> writeDescriptorSet;
+
+  std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {
+    genSamplesData.outPointsBuffer,
+    genSamplesData.indirectBuffer,
+    genSamplesData.vertexBuffer,
+    genSamplesData.primCounterBuffer,
+    ffData.rawBuffer,
+    ffData.areas
+  };
+
+  for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
+  {
+    descriptorBufferInfo[i]        = VkDescriptorBufferInfo{};
+    descriptorBufferInfo[i].buffer = buffers[i];
+    descriptorBufferInfo[i].offset = 0;
+    descriptorBufferInfo[i].range  = VK_WHOLE_SIZE;  
+
+    writeDescriptorSet[i]                  = VkWriteDescriptorSet{};
+    writeDescriptorSet[i].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet[i].dstSet           = m_allGeneratedDS[3];
+    writeDescriptorSet[i].dstBinding       = i;
+    writeDescriptorSet[i].descriptorCount  = 1;
+    writeDescriptorSet[i].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptorSet[i].pBufferInfo      = &descriptorBufferInfo[i];
+    writeDescriptorSet[i].pImageInfo       = nullptr;
+    writeDescriptorSet[i].pTexelBufferView = nullptr;
+  }
+
+  vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
+}

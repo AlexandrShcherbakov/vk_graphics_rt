@@ -58,13 +58,12 @@ void main()
 
   vec3 pos = points[tid + pointsOffset].position.xyz;
   vec3 normal = points[tid + pointsOffset].normal.xyz;
-  uint count = 0;
   float formFactorsSum = 0;
 
-  vec4 p1 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 0) * 2]);
-  vec4 p2 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 1) * 2]);
-  vec4 p3 = (geomTriangles[uint(points[tid + pointsOffset].position.w + 2) * 2]);
-  float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
+  vec4 p1 = (geomTriangles[uint(points[tid + pointsOffset].position.w * 3 + 0) * 2]);
+  vec4 p2 = (geomTriangles[uint(points[tid + pointsOffset].position.w * 3 + 1) * 2]);
+  vec4 p3 = (geomTriangles[uint(points[tid + pointsOffset].position.w * 3 + 2) * 2]);
+  float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + pointsOffset].position.w)];
   float geomMult = 1.0 / primArea / 3.1415926535897932;
 
   for (uint voxelId = kgenArgs.voxelId; voxelId < kgenArgs.voxelsCount; ++voxelId)
@@ -87,15 +86,14 @@ void main()
       float cosTheta1 = dot(dir, targetNormal);
       if (cosTheta1 >= 0.0)
         continue;
-      if (m_pAccelStruct_RayQuery_NearestHit(pos, dir, len))
+      if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 0.01, dir, len - 0.02))
       {
-        vec4 p1 = (geomTriangles[uint(points[i].position.w + 0) * 2]);
-        vec4 p2 = (geomTriangles[uint(points[i].position.w + 1) * 2]);
-        vec4 p3 = (geomTriangles[uint(points[i].position.w + 2) * 2]);
+        vec4 p1 = (geomTriangles[uint(points[i].position.w * 3 + 0) * 2]);
+        vec4 p2 = (geomTriangles[uint(points[i].position.w * 3 + 1) * 2]);
+        vec4 p3 = (geomTriangles[uint(points[i].position.w * 3 + 2) * 2]);
         float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
-        float ff = (cosTheta * -cosTheta1) / len / len * primArea * geomMult;
+        float ff = min((cosTheta * -cosTheta1) / len / len * primArea * geomMult, 1.0);
         formFactorsSum += ff;
-        count++;
         ffRaw[(pointsOffset + tid) * globalPointsCount + curOffset + i] = ff;
       }
     }
