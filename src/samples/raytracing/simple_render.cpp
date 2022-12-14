@@ -178,6 +178,7 @@ void SimpleRender::SetupSimplePipeline()
 {
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  m_pBindings->BindBuffer(1, FFClusteredBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   // if we are recreating pipeline (for example, to reload shaders)
@@ -263,7 +264,6 @@ void SimpleRender::CreateUniformBuffer()
 
   m_uniforms.lightPos  = LiteMath::float4(0.0f, 1.0f,  1.0f, 1.0f);
   m_uniforms.baseColor = LiteMath::float4(0.9f, 0.92f, 1.0f, 0.0f);
-  m_uniforms.animateLightColor = true;
 
   UpdateUniformBuffer(0.0f);
 
@@ -403,6 +403,9 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
 {
 // most uniforms are updated in GUI -> SetupGUIElements()
   m_uniforms.time = a_time;
+  m_uniforms.bmin = to_float3(sceneBbox.boxMin);
+  m_uniforms.bmax = to_float3(sceneBbox.boxMax);
+  m_uniforms.voxelSize = VOXEL_SIZE;
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }
 

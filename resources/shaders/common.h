@@ -24,8 +24,10 @@ struct UniformParams
   mat4  lightMatrix;
   vec4  lightPos;
   vec4  baseColor;
+  vec3 bmin;
   float time;
-  bool animateLightColor;
+  vec3 bmax;
+  float voxelSize;
 };
 
 struct MaterialData_pbrMR
