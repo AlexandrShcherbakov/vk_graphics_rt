@@ -350,25 +350,9 @@ void SimpleRender::CreateUniformBuffer()
   }
 
   {
-    VkMemoryRequirements memReq;
-    FFRawBuffer = vk_utils::createBuffer(m_device, sizeof(float) * maxPointsCount * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
-
-    VkMemoryAllocateInfo allocateInfo = {};
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.pNext = nullptr;
-    allocateInfo.allocationSize = memReq.size;
-    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
-                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                            m_physicalDevice);
-    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &FFRawMem));
-
-    VK_CHECK_RESULT(vkBindBufferMemory(m_device, FFRawBuffer, FFRawMem, 0));
-  }
-
-  {
     clustersCount = voxelsCount * PER_VOXEL_CLUSTERS;
     VkMemoryRequirements memReq;
-    FFClusteredBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    FFClusteredBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;

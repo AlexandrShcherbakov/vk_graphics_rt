@@ -229,8 +229,6 @@ protected:
   VkDeviceMemory samplePointsMem = VK_NULL_HANDLE;
   VkBuffer primCounterBuffer = VK_NULL_HANDLE;
   VkDeviceMemory primCounterMem = VK_NULL_HANDLE;
-  VkBuffer FFRawBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory FFRawMem = VK_NULL_HANDLE;
   VkBuffer FFClusteredBuffer = VK_NULL_HANDLE;
   VkDeviceMemory FFClusteredMem = VK_NULL_HANDLE;
   VkBuffer areasBuffer = VK_NULL_HANDLE;

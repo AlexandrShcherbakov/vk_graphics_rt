@@ -16,7 +16,7 @@ layout(binding = 1, set = 0) buffer point_buf { SamplePoint points[]; };
 layout(binding = 2, set = 0) buffer indir { uint indirection_buf[]; };
 layout(binding = 3, set = 0) buffer geom { vec4 geomTriangles[]; };
 layout(binding = 4, set = 0) buffer primCounterCount { uint primCounter[]; };
-layout(binding = 5, set = 0) buffer ffRawBuf { float ffRaw[]; };
+layout(binding = 5, set = 0) buffer ffBuf { float ff[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -43,61 +43,116 @@ layout( push_constant ) uniform kernelArgs
   uint voxelId;
 } kgenArgs;
 
+shared vec3 arrayToConv[256];
+
 void main()
 {
   uint tid = uint(gl_LocalInvocationID[0]);
-  uint pointsCount = indirection_buf[kgenArgs.voxelId * 4];
-  if (tid >= pointsCount)
-  {
-    return;
-  }
-
+  uint baseVoxelId = uint(gl_WorkGroupID.x);
+  uint targetVoxelId = uint(gl_WorkGroupID.y);
   uint pointsPerVoxel = 6 * kgenArgs.perFacePointsCount;
-  uint pointsOffset = kgenArgs.voxelId * pointsPerVoxel;
-  uint globalPointsCount = pointsPerVoxel * kgenArgs.voxelsCount;
+  uint pointsCount = indirection_buf[baseVoxelId * 4];
 
-  vec3 pos = points[tid + pointsOffset].position.xyz;
-  vec3 normal = points[tid + pointsOffset].normal.xyz;
-  float formFactorsSum = 0;
-
-  vec4 p1 = (geomTriangles[uint(points[tid + pointsOffset].position.w * 3 + 0) * 2]);
-  vec4 p2 = (geomTriangles[uint(points[tid + pointsOffset].position.w * 3 + 1) * 2]);
-  vec4 p3 = (geomTriangles[uint(points[tid + pointsOffset].position.w * 3 + 2) * 2]);
-  float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + pointsOffset].position.w)];
-  float geomMult = 1.0 / primArea / 3.1415926535897932;
-
-  for (uint voxelId = kgenArgs.voxelId; voxelId < kgenArgs.voxelsCount; ++voxelId)
+  vec3 positiveFF[6];
+  vec3 negativeFF[6];
+  for (int i = 0; i < 6; ++i)
   {
-    uint curOffset = voxelId * pointsPerVoxel;
-    for (uint i = 0; i < indirection_buf[voxelId * 4]; ++i)
+    positiveFF[i] = vec3(0);
+    negativeFF[i] = vec3(0);
+  }
+  if (tid < pointsCount)
+  {
+    uint sourcePointOffset = baseVoxelId * pointsPerVoxel;
+    uint globalPointsCount = pointsPerVoxel * kgenArgs.voxelsCount;
+
+    vec3 pos = points[tid + sourcePointOffset].position.xyz;
+    vec3 normal = points[tid + sourcePointOffset].normal.xyz;
+    float formFactorsSum = 0;
+
+    vec3 positiveWeights = max(normal, vec3(0));
+    vec3 negativeWeights = max(-normal, vec3(0));
+
+    vec4 p1 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 0) * 2]);
+    vec4 p2 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 1) * 2]);
+    vec4 p3 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 2) * 2]);
+    float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
+    float geomMult = 10.0;1.0 / primArea / 3.1415926535897932;
+
+    uint targetPointsOffset = targetVoxelId * pointsPerVoxel;
+    uint targetPointsCount = indirection_buf[targetVoxelId * 4];
+    for (uint i = 0; i < targetPointsCount; ++i)
     {
-      if (voxelId == kgenArgs.voxelId && i == tid)
+      if (targetVoxelId == baseVoxelId && i == tid)
         continue;
-      vec3 target = points[i + curOffset].position.xyz;
-      vec3 targetNormal = points[i + curOffset].normal.xyz;
+      vec3 target = points[i + targetPointsOffset].position.xyz;
       vec3 dir = target - pos;
       float len = length(dir);
-      if (len < 1e-2)
+      if (len < 1e-5)
         continue;
       dir /= len;
       float cosTheta = dot(dir, normal);
       if (cosTheta <= 0.0)
         continue;
-      float cosTheta1 = dot(dir, targetNormal);
-      if (cosTheta1 >= 0.0)
-        continue;
-      if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 0.01, dir, len - 0.02))
+      vec3 targetNormal = points[i + targetPointsOffset].normal.xyz;
+      float cosTheta1 = dot(-dir, targetNormal);
+      if (cosTheta1 <= 0.0)
+        continue; 
+      if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 1e-5, dir, len - 1e-5 * 2.0))
       {
-        vec4 p1 = (geomTriangles[uint(points[i].position.w * 3 + 0) * 2]);
-        vec4 p2 = (geomTriangles[uint(points[i].position.w * 3 + 1) * 2]);
-        vec4 p3 = (geomTriangles[uint(points[i].position.w * 3 + 2) * 2]);
+        vec4 p1 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 0) * 2]);
+        vec4 p2 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 1) * 2]);
+        vec4 p3 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 2) * 2]);
         float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
-        float ff = min((cosTheta * -cosTheta1) / len / len * primArea * geomMult, 1.0);
-        formFactorsSum += ff;
-        ffRaw[(pointsOffset + tid) * globalPointsCount + curOffset + i] = ff;
+        float ff = min((cosTheta * cosTheta1) / len / len * primArea * geomMult, 1.0);
+
+        vec3 targetPositiveWeights = max(targetNormal, vec3(0));
+        vec3 targetNegativeWeights = max(-targetNormal, vec3(0));
+
+        for (uint j = 0; j < 3; ++j)
+        {
+          positiveFF[j] += ff * targetPositiveWeights * positiveWeights[j];
+          negativeFF[j] += ff * targetNegativeWeights * positiveWeights[j];
+          positiveFF[j + 3] += ff * targetPositiveWeights * negativeWeights[j];
+          negativeFF[j + 3] += ff * targetNegativeWeights * negativeWeights[j];
+        }
       }
     }
   }
-  points[tid + pointsOffset].normal.w = formFactorsSum;
+  for (int i = 0; i < 6; ++i)
+  {
+    barrier();
+    arrayToConv[tid] = positiveFF[i];
+    for (uint d = 128; d > 0; d >>= 1)
+    {
+      barrier();
+      if (tid < d)
+      {
+        arrayToConv[tid] += arrayToConv[tid + d];
+      }
+    }
+    barrier();
+    if (tid == 0)
+    {
+      for (uint j = 0; j < 3; ++j)
+        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + j] = min(arrayToConv[0][j], 0.3);
+    }
+
+    memoryBarrierShared();
+    arrayToConv[tid] = negativeFF[i];
+    for (uint d = 128; d > 0; d >>= 1)
+    {
+      memoryBarrierShared();
+      if (tid < d)
+      {
+        arrayToConv[tid] += arrayToConv[tid + d];
+      }
+    }
+    memoryBarrierShared();
+    if (tid == 0)
+    {
+      for (uint j = 0; j < 3; ++j)
+        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + 3 + j] = min(arrayToConv[0][j], 0.3);
+    }
+  }
 }
 

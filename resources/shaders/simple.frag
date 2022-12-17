@@ -44,12 +44,12 @@ void main()
 
     out_fragColor = color_lights * Params.baseColor;
     out_fragColor = vec4(0);
-    for (int i = 0; i < voxelsCount; ++i)
+    for (int i = 0; i < voxelsCount * 6; ++i)
     {
         for (int j = 0; j < 3; ++j)
         {
-            out_fragColor += vec4(ff[voxelIdx * voxelsCount * 6 + i * 6 + j]) * max(0, N[j]);
-            out_fragColor += vec4(ff[voxelIdx * voxelsCount * 6 + i * 6 + 3 + j]) * max(0, -N[j]);
+            out_fragColor += vec4(ff[voxelIdx * voxelsCount * 6 * 6 + i + j]) * max(0, N[j]);
+            out_fragColor += vec4(ff[voxelIdx * voxelsCount * 6 * 6 + i + 3 + j]) * max(0, -N[j]);
         }
     }
 }
