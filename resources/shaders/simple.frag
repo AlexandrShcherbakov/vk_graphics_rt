@@ -18,7 +18,7 @@ layout(binding = 0, set = 0) uniform AppData
 {
     UniformParams Params;
 };
-layout(binding = 1, set = 0) buffer ffFinalBuf { float ff[]; };
+layout(binding = 1, set = 0) buffer lighting_buf { float lighting[]; };
 
 
 void main()
@@ -43,13 +43,5 @@ void main()
     vec4 color_lights = mix(color1, color2, 0.2f);
 
     out_fragColor = color_lights * Params.baseColor;
-    out_fragColor = vec4(0);
-    for (int i = 0; i < voxelsCount * 6; ++i)
-    {
-        for (int j = 0; j < 3; ++j)
-        {
-            out_fragColor += vec4(ff[voxelIdx * voxelsCount * 6 * 6 + i + j]) * max(0, N[j]);
-            out_fragColor += vec4(ff[voxelIdx * voxelsCount * 6 * 6 + i + 3 + j]) * max(0, -N[j]);
-        }
-    }
+    out_fragColor = vec4(lighting[voxelIdx]);
 }

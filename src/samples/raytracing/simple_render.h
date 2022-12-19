@@ -233,6 +233,8 @@ protected:
   VkDeviceMemory FFClusteredMem = VK_NULL_HANDLE;
   VkBuffer areasBuffer = VK_NULL_HANDLE;
   VkDeviceMemory areasMem = VK_NULL_HANDLE;
+  VkBuffer initLightingBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory initLightingMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
   const float VOXEL_SIZE = 0.25f;
   LiteMath::uint3 voxelsGrid;

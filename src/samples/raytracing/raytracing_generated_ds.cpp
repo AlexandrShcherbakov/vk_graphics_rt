@@ -29,10 +29,11 @@ void RayTracer_Generated::AllocateAllDescriptorSets()
   
   // allocate all descriptor sets
   //
-  VkDescriptorSetLayout layouts[3] = {};
+  VkDescriptorSetLayout layouts[4] = {};
   layouts[0] = CastSingleRayMegaDSLayout;
   layouts[1] = GenSamplesDSLayout;
   layouts[2] = ComputeFFDSLayout;
+  layouts[3] = initLightingDSLayout;
 
   VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
   descriptorSetAllocateInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -207,6 +208,54 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
     writeDescriptorSet[i + 1]                  = VkWriteDescriptorSet{};
     writeDescriptorSet[i + 1].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet[i + 1].dstSet           = m_allGeneratedDS[2];
+    writeDescriptorSet[i + 1].dstBinding       = i + 1;
+    writeDescriptorSet[i + 1].descriptorCount  = 1;
+    writeDescriptorSet[i + 1].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptorSet[i + 1].pBufferInfo      = &descriptorBufferInfo[i];
+    writeDescriptorSet[i + 1].pImageInfo       = nullptr;
+    writeDescriptorSet[i + 1].pTexelBufferView = nullptr;
+  }
+
+  vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
+}
+
+void RayTracer_Generated::InitAllGeneratedDescriptorSets_InitLighting()
+{
+  const uint32_t BUFFERS_COUNT = 1;
+  std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
+  VkAccelerationStructureKHR accelStructs = {};
+  VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelInfo = {};
+  std::array<VkWriteDescriptorSet, 1 + BUFFERS_COUNT> writeDescriptorSet;
+  {
+    VulkanRTX* pScene = dynamic_cast<VulkanRTX*>(m_pAccelStruct.get());
+    if(pScene == nullptr)
+      std::cout << "[RayTracer_Generated::InitAllGeneratedDescriptorSets_CastSingleRay]: fatal error, wrong accel struct type" << std::endl;
+    accelStructs = pScene->GetSceneAccelStruct();
+    descriptorAccelInfo = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,VK_NULL_HANDLE,1, &accelStructs};
+  }
+
+  writeDescriptorSet[0]                  = VkWriteDescriptorSet{};
+  writeDescriptorSet[0].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeDescriptorSet[0].dstSet           = m_allGeneratedDS[3];
+  writeDescriptorSet[0].dstBinding       = 0;
+  writeDescriptorSet[0].descriptorCount  = 1;
+  writeDescriptorSet[0].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+  writeDescriptorSet[0].pNext          = &descriptorAccelInfo;
+
+  std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {
+    lightingData.initialLighting
+  };
+
+  for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
+  {
+    descriptorBufferInfo[i]        = VkDescriptorBufferInfo{};
+    descriptorBufferInfo[i].buffer = buffers[i];
+    descriptorBufferInfo[i].offset = 0;
+    descriptorBufferInfo[i].range  = VK_WHOLE_SIZE;  
+
+    writeDescriptorSet[i + 1]                  = VkWriteDescriptorSet{};
+    writeDescriptorSet[i + 1].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet[i + 1].dstSet           = m_allGeneratedDS[3];
     writeDescriptorSet[i + 1].dstBinding       = i + 1;
     writeDescriptorSet[i + 1].descriptorCount  = 1;
     writeDescriptorSet[i + 1].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;

@@ -63,8 +63,8 @@ void SimpleRender::GetRTFeatures()
 
 void SimpleRender::SetupValidationLayers()
 {
-  // m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-  // m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
+  m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+  m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
 void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -178,7 +178,7 @@ void SimpleRender::SetupSimplePipeline()
 {
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  m_pBindings->BindBuffer(1, FFClusteredBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  m_pBindings->BindBuffer(1, initLightingBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   // if we are recreating pipeline (for example, to reload shaders)
@@ -381,6 +381,22 @@ void SimpleRender::CreateUniformBuffer()
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, areasBuffer, areasMem, 0));
   }
+
+  {
+    VkMemoryRequirements memReq;
+    initLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &initLightingMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, initLightingBuffer, initLightingMem, 0));
+  }
 }
 
 void SimpleRender::UpdateUniformBuffer(float a_time)
@@ -449,25 +465,25 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
 
-    {
-      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
+    // {
+    //   vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
 
-      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
-                              &pointsdSet, 0, VK_NULL_HANDLE);
+    //   vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
+    //                           &pointsdSet, 0, VK_NULL_HANDLE);
 
-      struct KernelArgsPC
-      {
-        LiteMath::float4x4 projView;
-        uint32_t perFacePointsCount;
-      } pcData;
-      pcData.projView = pushConst2M.projView;
-      pcData.perFacePointsCount = PER_SURFACE_POINTS;
-      vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
-                          sizeof(pcData), &pcData);
+    //   struct KernelArgsPC
+    //   {
+    //     LiteMath::float4x4 projView;
+    //     uint32_t perFacePointsCount;
+    //   } pcData;
+    //   pcData.projView = pushConst2M.projView;
+    //   pcData.perFacePointsCount = PER_SURFACE_POINTS;
+    //   vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
+    //                       sizeof(pcData), &pcData);
       
-      // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
-      vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
-    }
+    //   // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
+    //   vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
+    // }
 
     vkCmdEndRenderPass(a_cmdBuff);
   }
