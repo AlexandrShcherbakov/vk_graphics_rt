@@ -43,5 +43,11 @@ void main()
     vec4 color_lights = mix(color1, color2, 0.2f);
 
     out_fragColor = color_lights * Params.baseColor;
-    out_fragColor = vec4(lighting[voxelIdx]);
+    float light = 0;
+    for (int i = 0; i < 3; ++i)
+    {
+        light += lighting[voxelIdx * 6 + i] * max(0, N[i]);
+        light += lighting[voxelIdx * 6 + 3 + i] * max(0, -N[i]);
+    }
+    out_fragColor = vec4(light);
 }
