@@ -293,6 +293,6 @@ void RayTracer_Generated::reflLightingCmd(VkCommandBuffer a_commandBuffer, uint3
   vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, reflLightingLayout, 0, 1, &m_allGeneratedDS[4], 0, nullptr);
   vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, reflLightingPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, voxels_count * 6, voxels_count * 6, 1);
+  vkCmdDispatch    (m_currCmdBuffer, voxels_count * 6, 1, 1);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }

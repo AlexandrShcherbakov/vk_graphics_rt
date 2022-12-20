@@ -24,29 +24,29 @@ shared float arrayToConv[GROUP_SIZE];
 
 void main()
 {
-  uint tid = uint(gl_GlobalInvocationID.x);
+  uint tid = gl_LocalInvocationID.x;
   uint patchesCount = kgenArgs.voxelsCount * 6;
-  uint rowIdx = gl_GlobalInvocationID.y;
+  uint rowIdx = gl_WorkGroupID.x;
   if (rowIdx >= patchesCount)
     return;
-  uint lid = gl_LocalInvocationID.x;
-  for (int i = 0; i < (patchesCount + GROUP_SIZE - 1) / GROUP_SIZE; ++i)
+  arrayToConv[tid] = 0;
+  for (int i = 0; i < min(1, (patchesCount + GROUP_SIZE - 1) / GROUP_SIZE); ++i)
   {
-    uint column = i * GROUP_SIZE + lid;
+    uint column = i * GROUP_SIZE + tid;
     if (column < patchesCount)
-      arrayToConv[lid] += lighting[column];//ff[rowIdx * patchesCount + column] * lighting[column];
+      arrayToConv[tid] += ff[rowIdx * patchesCount + column] * lighting[column];
   }
   barrier();
   for (uint d = GROUP_SIZE >> 1; d > 0; d >>= 1)
   {
     barrier();
-    if (lid < d)
+    if (tid < d)
     {
-      arrayToConv[lid] += arrayToConv[lid + d];
+      arrayToConv[tid] += arrayToConv[tid + d];
     }
   }
   barrier();
-  if (lid == 0)
-    bounce[rowIdx] = lighting[rowIdx];//arrayToConv[0];
+  if (tid == 0)
+    bounce[rowIdx] = arrayToConv[0];
 }
 
