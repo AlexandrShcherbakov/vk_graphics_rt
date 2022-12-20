@@ -12,7 +12,8 @@ if __name__ == '__main__':
         "debug_points.frag",
         "GenSamples.comp",
         "ComputeFF.comp",
-        "initLighting.comp"
+        "initLighting.comp",
+        "oneBounce.comp"
     ]
 
     for shader in shader_list:

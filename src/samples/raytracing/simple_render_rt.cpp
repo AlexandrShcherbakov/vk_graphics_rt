@@ -197,7 +197,7 @@ void SimpleRender::TraceGenSamples()
       pointsBuffer, indirectPointsBuffer,
       samplePointsBuffer, m_pScnMgr->GetVertexBuffer(), m_pScnMgr->GetIndexBuffer(),
       m_pScnMgr->GetInstanceMatBuffer(), m_pScnMgr->GetMeshInfoBuffer(),
-      primCounterBuffer, areasBuffer, FFClusteredBuffer, initLightingBuffer);
+      primCounterBuffer, areasBuffer, FFClusteredBuffer, initLightingBuffer, reflLightingBuffer);
     m_pRayTracerGPU->UpdateAll(m_pCopyHelper);
   }
 
@@ -222,6 +222,7 @@ void SimpleRender::TraceGenSamples()
     m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, voxelsCount);
     m_pRayTracerGPU->initLightingCmd(commandBuffer, voxelsCount, VOXEL_SIZE,
       to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos));
+    m_pRayTracerGPU->reflLightingCmd(commandBuffer, voxelsCount);
 
     vkEndCommandBuffer(commandBuffer);
 

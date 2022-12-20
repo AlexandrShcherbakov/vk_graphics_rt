@@ -1,0 +1,54 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_ray_query : require
+
+#include "unpack_attributes.h"
+
+layout(binding = 0, set = 0) buffer ff_buf { float ff[]; };
+layout(binding = 1, set = 0) buffer lighting_buf { float lighting[]; };
+layout(binding = 2, set = 0) buffer target_buf { float bounce[]; };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const uint GROUP_SIZE = 256;
+
+layout(local_size_x = GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  uint voxelsCount;
+} kgenArgs;
+
+shared float arrayToConv[GROUP_SIZE];
+
+void main()
+{
+  uint tid = uint(gl_GlobalInvocationID.x);
+  uint patchesCount = kgenArgs.voxelsCount * 6;
+  uint rowIdx = gl_GlobalInvocationID.y;
+  if (rowIdx >= patchesCount)
+    return;
+  if (tid < patchesCount)
+  {
+    for (int i = 0; i < (patchesCount + GROUP_SIZE - 1) / GROUP_SIZE; ++i)
+    {
+      uint column = i * GROUP_SIZE + tid;
+      if (column < patchesCount)
+        arrayToConv[tid] += ff[rowIdx * patchesCount + column] * lighting[column];
+    }
+  }
+  barrier();
+  for (uint d = GROUP_SIZE >> 1; d > 0; d >>= 1)
+  {
+    barrier();
+    if (tid < d)
+    {
+      arrayToConv[tid] += arrayToConv[tid + d];
+    }
+  }
+  barrier();
+  if (tid == 0)
+    bounce[rowIdx] = arrayToConv[0];
+}
+

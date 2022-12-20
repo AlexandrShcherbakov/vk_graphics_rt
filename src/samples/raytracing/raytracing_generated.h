@@ -46,7 +46,8 @@ public:
     VkBuffer prim_counter_buffer,
     VkBuffer areas_buffer,
     VkBuffer ff_clustered_buffer,
-    VkBuffer init_lighting_buffer)
+    VkBuffer init_lighting_buffer,
+    VkBuffer refl_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -59,9 +60,11 @@ public:
     ffData.areas = areas_buffer;
     ffData.clusteredBuffer = ff_clustered_buffer;
     lightingData.initialLighting = init_lighting_buffer;
+    lightingData.reflLighting = refl_buffer;
     InitAllGeneratedDescriptorSets_GenSamples();
     InitAllGeneratedDescriptorSets_ComputeFF();
     InitAllGeneratedDescriptorSets_InitLighting();
+    InitAllGeneratedDescriptorSets_ReflLighting();
   }
 
   virtual ~RayTracer_Generated();
@@ -107,6 +110,8 @@ public:
     LiteMath::float3 bmin,
     LiteMath::float3 bmax,
     LiteMath::float3 light_pos);
+
+  void reflLightingCmd(VkCommandBuffer a_commandBuffer, uint32_t voxels_count);
   
   struct MemLoc
   {
@@ -146,6 +151,7 @@ protected:
   virtual void InitAllGeneratedDescriptorSets_GenSamples();
   virtual void InitAllGeneratedDescriptorSets_ComputeFF();
   virtual void InitAllGeneratedDescriptorSets_InitLighting();
+  virtual void InitAllGeneratedDescriptorSets_ReflLighting();
 
   virtual void AssignBuffersToMemory(const std::vector<VkBuffer>& a_buffers, VkDeviceMemory a_mem);
 
@@ -188,6 +194,7 @@ protected:
   struct LightingData
   {
     VkBuffer initialLighting = VK_NULL_HANDLE;
+    VkBuffer reflLighting = VK_NULL_HANDLE;
   } lightingData;
 
   struct MembersDataGPU
@@ -204,6 +211,7 @@ protected:
   VkDescriptorSetLayout GenSampleDSLayout();
   VkDescriptorSetLayout CreateComputeFFDSLayout();
   VkDescriptorSetLayout CreateInitLightingDSLayout();
+  VkDescriptorSetLayout CreateReflLightingDSLayout();
   void InitKernel_CastSingleRayMega(const char* a_filePath);
 
   VkPipelineLayout      GenSamplesLayout   = VK_NULL_HANDLE;
@@ -218,6 +226,10 @@ protected:
   VkPipeline            initLightingPipeline  = VK_NULL_HANDLE; 
   VkDescriptorSetLayout initLightingDSLayout  = VK_NULL_HANDLE;
 
+  VkPipelineLayout      reflLightingLayout    = VK_NULL_HANDLE;
+  VkPipeline            reflLightingPipeline  = VK_NULL_HANDLE;
+  VkDescriptorSetLayout reflLightingDSLayout  = VK_NULL_HANDLE;
+
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
 
   VkPipelineLayout      copyKernelFloatLayout   = VK_NULL_HANDLE;
@@ -226,7 +238,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  std::array<VkDescriptorSet, 4>  m_allGeneratedDS;
+  std::array<VkDescriptorSet, 5>  m_allGeneratedDS;
 
   RayTracer_UBO_Data m_uboData;
   
