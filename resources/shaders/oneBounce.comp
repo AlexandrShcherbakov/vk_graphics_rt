@@ -30,7 +30,7 @@ void main()
   if (rowIdx >= patchesCount)
     return;
   arrayToConv[tid] = 0;
-  for (int i = 0; i < min(1, (patchesCount + GROUP_SIZE - 1) / GROUP_SIZE); ++i)
+  for (int i = 0; i < (patchesCount + GROUP_SIZE - 1) / GROUP_SIZE; ++i)
   {
     uint column = i * GROUP_SIZE + tid;
     if (column < patchesCount)
@@ -47,6 +47,6 @@ void main()
   }
   barrier();
   if (tid == 0)
-    bounce[rowIdx] = arrayToConv[0];
+    bounce[rowIdx] = lighting[rowIdx];arrayToConv[0];
 }
 

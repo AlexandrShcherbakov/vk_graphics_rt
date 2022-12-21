@@ -38,9 +38,9 @@ void main()
 
     vec3 N = surf.wNorm; 
 
-    vec4 color1 = max(dot(N, lightDir1) * 0.5 + 0.5, 0.0f) * lightColor1;
+    vec4 color1 = max(dot(N, lightDir1), 0.0f) * lightColor1;
     vec4 color2 = max(dot(N, lightDir2) * 0.5 + 0.5, 0.0f) * lightColor2;
-    vec4 color_lights = mix(color1, color2, 0.2f);
+    vec4 color_lights = color1;//mix(color1, color2, 0.2f);
 
     out_fragColor = color_lights * Params.baseColor;
     float light = 0;

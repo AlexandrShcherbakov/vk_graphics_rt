@@ -271,6 +271,7 @@ void SimpleRender::CreateUniformBuffer()
   voxelsGrid = uint3(std::ceil(gridF.x), std::ceil(gridF.y), std::ceil(gridF.z));
   voxelsCount = voxelsGrid.x * voxelsGrid.y * voxelsGrid.z;
   maxPointsCount = voxelsCount * 6 * PER_SURFACE_POINTS;
+  std::cout << "Voxels count " << voxelsCount << std::endl;
 
   {
     VkMemoryRequirements memReq;

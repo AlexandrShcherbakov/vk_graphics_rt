@@ -134,7 +134,7 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + j] = min(arrayToConv[0][j], 0.3);
+        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + j] = arrayToConv[0][j];
     }
 
     barrier();
@@ -151,7 +151,7 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + 3 + j] = min(arrayToConv[0][j], 0.3);
+        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + 3 + j] = arrayToConv[0][j];
     }
   }
 }
