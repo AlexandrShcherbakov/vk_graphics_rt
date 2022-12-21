@@ -239,6 +239,31 @@ VkDescriptorSetLayout RayTracer_Generated::CreateReflLightingDSLayout()
   return layout;
 }
 
+VkDescriptorSetLayout RayTracer_Generated::CreateCorrectFFDSLayout()
+{
+  const uint32_t BUFFERS_COUNT = 1;
+  std::array<VkDescriptorSetLayoutBinding, BUFFERS_COUNT> dsBindings;
+
+  for (uint32_t i = 0; i < BUFFERS_COUNT; ++i)
+  {
+    const uint32_t bindingId = i;
+    dsBindings[bindingId].binding            = bindingId;
+    dsBindings[bindingId].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    dsBindings[bindingId].descriptorCount    = 1;
+    dsBindings[bindingId].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+    dsBindings[bindingId].pImmutableSamplers = nullptr;  
+  }
+  
+  VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+  descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  descriptorSetLayoutCreateInfo.bindingCount = uint32_t(dsBindings.size());
+  descriptorSetLayoutCreateInfo.pBindings    = dsBindings.data();
+  
+  VkDescriptorSetLayout layout = nullptr;
+  VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, NULL, &layout));
+  return layout;
+}
+
 VkDescriptorSetLayout RayTracer_Generated::CreatecopyKernelFloatDSLayout()
 {
   std::array<VkDescriptorSetLayoutBinding, 2> dsBindings;
@@ -298,6 +323,12 @@ void RayTracer_Generated::InitKernel_CastSingleRayMega(const char* a_filePath)
   reflLightingDSLayout = CreateReflLightingDSLayout();
   reflLightingLayout = m_pMaker->MakeLayout(device, { reflLightingDSLayout }, 128);
   reflLightingPipeline = m_pMaker->MakePipeline(device);
+
+  shaderPath = AlterShaderPath("../../../resources/shaders/correctFF.comp.spv");
+  m_pMaker->LoadShader(device, shaderPath.c_str(), nullptr, "main");
+  correctFFDSLayout = CreateCorrectFFDSLayout();
+  correctFFLayout = m_pMaker->MakeLayout(device, { correctFFDSLayout }, 128);
+  correctFFPipeline = m_pMaker->MakePipeline(device);
 }
 
 

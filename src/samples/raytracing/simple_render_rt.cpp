@@ -221,6 +221,7 @@ void SimpleRender::TraceGenSamples()
     m_pRayTracerGPU->GenSamplesCmd(commandBuffer, PER_SURFACE_POINTS,
       to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), VOXEL_SIZE, m_uniforms.time, m_pScnMgr->GetInstanceMatrix(0));
     m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, voxelsCount);
+    m_pRayTracerGPU->CorrectFFCmd(commandBuffer, voxelsCount);
     m_pRayTracerGPU->initLightingCmd(commandBuffer, voxelsCount, VOXEL_SIZE,
       to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos));
     m_pRayTracerGPU->reflLightingCmd(commandBuffer, voxelsCount);

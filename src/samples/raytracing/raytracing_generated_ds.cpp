@@ -29,12 +29,13 @@ void RayTracer_Generated::AllocateAllDescriptorSets()
   
   // allocate all descriptor sets
   //
-  VkDescriptorSetLayout layouts[5] = {};
+  VkDescriptorSetLayout layouts[6] = {};
   layouts[0] = CastSingleRayMegaDSLayout;
   layouts[1] = GenSamplesDSLayout;
   layouts[2] = ComputeFFDSLayout;
   layouts[3] = initLightingDSLayout;
   layouts[4] = reflLightingDSLayout;
+  layouts[5] = correctFFDSLayout;
 
   VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
   descriptorSetAllocateInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -290,6 +291,37 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ReflLighting()
     writeDescriptorSet[i]                  = VkWriteDescriptorSet{};
     writeDescriptorSet[i].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet[i].dstSet           = m_allGeneratedDS[4];
+    writeDescriptorSet[i].dstBinding       = i;
+    writeDescriptorSet[i].descriptorCount  = 1;
+    writeDescriptorSet[i].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptorSet[i].pBufferInfo      = &descriptorBufferInfo[i];
+    writeDescriptorSet[i].pImageInfo       = nullptr;
+    writeDescriptorSet[i].pTexelBufferView = nullptr;
+  }
+
+  vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
+}
+
+void RayTracer_Generated::InitAllGeneratedDescriptorSets_CorrectFF()
+{
+  const uint32_t BUFFERS_COUNT = 1;
+  std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
+  std::array<VkWriteDescriptorSet, BUFFERS_COUNT> writeDescriptorSet;
+
+  std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {
+    ffData.clusteredBuffer
+  };
+
+  for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
+  {
+    descriptorBufferInfo[i]        = VkDescriptorBufferInfo{};
+    descriptorBufferInfo[i].buffer = buffers[i];
+    descriptorBufferInfo[i].offset = 0;
+    descriptorBufferInfo[i].range  = VK_WHOLE_SIZE;  
+
+    writeDescriptorSet[i]                  = VkWriteDescriptorSet{};
+    writeDescriptorSet[i].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet[i].dstSet           = m_allGeneratedDS[5];
     writeDescriptorSet[i].dstBinding       = i;
     writeDescriptorSet[i].descriptorCount  = 1;
     writeDescriptorSet[i].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;

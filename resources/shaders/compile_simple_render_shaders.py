@@ -13,7 +13,8 @@ if __name__ == '__main__':
         "GenSamples.comp",
         "ComputeFF.comp",
         "initLighting.comp",
-        "oneBounce.comp"
+        "oneBounce.comp",
+        "CorrectFF.comp",
     ]
 
     for shader in shader_list:

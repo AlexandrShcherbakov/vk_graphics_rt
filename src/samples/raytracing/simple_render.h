@@ -238,7 +238,7 @@ protected:
   VkBuffer reflLightingBuffer = VK_NULL_HANDLE;
   VkDeviceMemory reflLightingMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
-  const float VOXEL_SIZE = 0.5f;
+  const float VOXEL_SIZE = 0.25f;
   LiteMath::uint3 voxelsGrid;
   uint32_t voxelsCount = 0;
   uint32_t clustersCount = 0;
