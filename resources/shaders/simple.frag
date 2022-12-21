@@ -23,7 +23,8 @@ layout(binding = 1, set = 0) buffer lighting_buf { float lighting[]; };
 
 void main()
 {
-    uvec3 voxelCoord = uvec3(floor((surf.wPos - Params.bmin) / Params.voxelSize));
+    vec3 coords = (surf.wPos - Params.bmin) / Params.voxelSize;
+    uvec3 voxelCoord = uvec3(coords);
     uvec3 voxelsExtend = uvec3(ceil((Params.bmax - Params.bmin) / Params.voxelSize));
     uint voxelsCount = voxelsExtend.x * voxelsExtend.y * voxelsExtend.z;
     uint voxelIdx = (voxelCoord.x * voxelsExtend.y + voxelCoord.y) * voxelsExtend.z + voxelCoord.z;
@@ -43,11 +44,30 @@ void main()
     vec4 color_lights = color1;//mix(color1, color2, 0.2f);
 
     out_fragColor = color_lights * Params.baseColor;
-    float light = 0;
-    for (int i = 0; i < 3; ++i)
+    vec3 UVW = (coords - voxelCoord) - 0.5;
+    float light[8];
+    for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 2; ++j)
+            for (int k = 0; k < 2; ++k)
+            {
+                float voxLight = 0;
+                ivec3 voxelId = ivec3(voxelCoord) + ivec3(i, j, k) * ivec3(sign(UVW));
+                uint voxelIdx = (voxelId.x * voxelsExtend.y + voxelId.y) * voxelsExtend.z + voxelId.z;
+                for (int z = 0; z < 3; ++z)
+                {
+                    voxLight += lighting[voxelIdx * 6 + z] * max(0, N[z]);
+                    voxLight += lighting[voxelIdx * 6 + 3 + z] * max(0, -N[z]);
+                }
+                light[i * 4 + j * 2 + k] = voxLight;
+            }
+    for (int i = 0; i < 4; ++i)
     {
-        light += lighting[voxelIdx * 6 + i] * max(0, N[i]);
-        light += lighting[voxelIdx * 6 + 3 + i] * max(0, -N[i]);
+        light[i] = mix(light[i], light[i + 4], abs(UVW.x));
     }
-    out_fragColor = vec4(light);
+    for (int i = 0; i < 2; ++i)
+    {
+        light[i] = mix(light[i], light[i + 2], abs(UVW.y));
+    }
+    light[0] = mix(light[0], light[1], abs(UVW.z));
+    out_fragColor = vec4(light[0]);
 }

@@ -44,15 +44,16 @@ void SimpleRender::SetupRTImage()
 void SimpleRender::GetBbox()
 {
   auto meshesData = m_pScnMgr->GetMeshData();
-  for(size_t i = 0; i < m_pScnMgr->MeshesNum(); ++i)
+  for (size_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
   {
-    const auto& info = m_pScnMgr->GetMeshInfo(i);
+    const auto& info = m_pScnMgr->GetMeshInfo(m_pScnMgr->GetInstanceInfo(i).mesh_id);
     auto vertices = reinterpret_cast<float*>((char*)meshesData->VertexData() + info.m_vertexOffset * meshesData->SingleVertexSize());
+    auto matrix = m_pScnMgr->GetInstanceMatrix(i);
 
     auto stride = meshesData->SingleVertexSize() / sizeof(float);
     for(size_t v = 0; v < info.m_vertNum; ++v)
     {
-      sceneBbox.include(float4(vertices[v * stride + 0], vertices[v * stride + 1], vertices[v * stride + 2], 1.0f));
+      sceneBbox.include(matrix * float4(vertices[v * stride + 0], vertices[v * stride + 1], vertices[v * stride + 2], 1.0f));
     }
   }
   sceneBbox.boxMin -= 1e-3f + VOXEL_SIZE * 0.5;
@@ -217,9 +218,9 @@ void SimpleRender::TraceGenSamples()
     vkCmdFillBuffer(commandBuffer, indirectPointsBuffer, 0, sizeof(uint32_t) * 4 * voxelsCount, 0);
     vkCmdFillBuffer(commandBuffer, primCounterBuffer, 0, sizeof(uint32_t) * trianglesCount, 0);
     vkCmdFillBuffer(commandBuffer, FFClusteredBuffer, 0, sizeof(float) * clustersCount * clustersCount, 0);
-    // m_pRayTracerGPU->GenSamplesCmd(commandBuffer, PER_SURFACE_POINTS,
-    //   to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), VOXEL_SIZE, m_uniforms.time, m_pScnMgr->GetInstanceMatrix(0));
-    // m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, voxelsCount);
+    m_pRayTracerGPU->GenSamplesCmd(commandBuffer, PER_SURFACE_POINTS,
+      to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), VOXEL_SIZE, m_uniforms.time, m_pScnMgr->GetInstanceMatrix(0));
+    m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, voxelsCount);
     m_pRayTracerGPU->initLightingCmd(commandBuffer, voxelsCount, VOXEL_SIZE,
       to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos));
     m_pRayTracerGPU->reflLightingCmd(commandBuffer, voxelsCount);
