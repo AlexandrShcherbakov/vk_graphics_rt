@@ -76,7 +76,7 @@ void main()
     vec4 p2 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 1) * 2]);
     vec4 p3 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 2) * 2]);
     float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
-    float geomMult = 10.0;1.0 / primArea / 3.1415926535897932;
+    float geomMult = 1.0 / primArea / 3.1415926535897932;
 
     uint targetPointsOffset = targetVoxelId * pointsPerVoxel;
     uint targetPointsCount = indirection_buf[targetVoxelId * 4];
@@ -97,7 +97,7 @@ void main()
       float cosTheta1 = dot(-dir, targetNormal);
       if (cosTheta1 <= 0.0)
         continue; 
-      if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 1e-5, dir, len - 1e-5 * 2.0))
+      if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 1e-2, dir, len - 1e-2 * 2.0))
       {
         vec4 p1 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 0) * 2]);
         vec4 p2 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 1) * 2]);
