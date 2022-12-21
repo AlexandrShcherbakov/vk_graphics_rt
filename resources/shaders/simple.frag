@@ -69,5 +69,11 @@ void main()
         light[i] = mix(light[i], light[i + 2], abs(UVW.y));
     }
     light[0] = mix(light[0], light[1], abs(UVW.z));
+    //138
     out_fragColor = vec4(light[0]);
+    // if (voxelIdx == 33)
+    // {
+    //     out_fragColor = vec4(1, 0, 0, 1);
+    // }
+    // out_fragColor.xyz = N;
 }

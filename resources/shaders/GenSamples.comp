@@ -39,15 +39,18 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
 
     vec2 bars     = rayQueryGetIntersectionBarycentricsEXT(rayQuery, true);
 
-    const vec3 n1 = DecodeNormal(floatBitsToInt(p1.w));
-    const vec3 n2 = DecodeNormal(floatBitsToInt(p2.w));
-    const vec3 n3 = DecodeNormal(floatBitsToInt(p3.w));
+    vec3 n1 = DecodeNormal(floatBitsToInt(p1.w));
+    // n1    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n1);
+    vec3 n2 = DecodeNormal(floatBitsToInt(p2.w));
+    // n2    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n2);
+    vec3 n3 = DecodeNormal(floatBitsToInt(p3.w));
+    // n3    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n3);
     normal = normalize(n1 * bars.x + n2 * bars.y + n3 * (1 - bars.x - bars.y));
     startIdxId = primIdx + instInfo[instanceIdx].x / 3;
 
     target = rayPos + rayDir * t;
-    if (dot(normal, rayDir) >= 0.0)
-      return false;
+    // if (dot(normal, rayDir) >= 0.0)
+    //   return false;
 
     return true;
   }
@@ -121,7 +124,7 @@ void main()
   dir = -offsetMask * offsetSign;
   len = kgenArgs.voxelSize;
   uint startIdxId;
-  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len * 2.f, res, normal, startIdxId))
+  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId))
   {
     float targetLen = length(res - point);
     uint targetIdx = atomicAdd(indirect_buf[indirectOffset + 0], 1) + pointsOffset;
@@ -131,8 +134,10 @@ void main()
   }
   // else
   // {
-  //   uint targetIdx = atomicAdd(indirect_buf[0], 1);
-  //   out_points[targetIdx] = vec4(mix(point, point + dir * len * 2.f, fract(kgenArgs.time / 7.0)), 1);
+  //   uint targetIdx = atomicAdd(indirect_buf[indirectOffset + 0], 1) + pointsOffset;
+  //   out_points[targetIdx] = vec4(mix(point, point + dir * len * 2.f, fract(kgenArgs.time / 7.0)), 0);
+  //   out_points[targetIdx * 2 + 1] = vec4(normal, 0);
+    
   // }
 }
 

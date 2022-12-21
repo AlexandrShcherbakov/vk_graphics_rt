@@ -14,5 +14,5 @@ layout (location = 0 ) in VS_OUT
 void main()
 {
     // out_fragColor = vec4(normalize(surf.wNorm) * 0.5 + 0.5, 1);
-    out_fragColor = vec4(surf.wNorm, 1);
+    out_fragColor = vec4(0, 1, 0, 0);vec4(surf.wNorm, 1);
 }
