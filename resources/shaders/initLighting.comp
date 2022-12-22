@@ -46,12 +46,12 @@ void main()
   vec3 center = kgenArgs.bmin + (voxelIdx + 0.5) * kgenArgs.voxelSize;
   vec3 positiveLight = vec3(0);
   vec3 negativeLight = vec3(0);
-  const int perAxisCnt = 4;
+  const int perAxisCnt = 7;
   for (int x = 0; x < perAxisCnt; ++x)
     for (int y = 0; y < perAxisCnt; ++y)
       for (int z = 0; z < perAxisCnt; ++z)
       {
-        vec3 offset = vec3(x, y, z) / perAxisCnt - 0.5;
+        vec3 offset = (vec3(x, y, z) + 0.5) / perAxisCnt - 0.5;
         vec3 pos = center + offset * kgenArgs.voxelSize;
         vec3 toLight = kgenArgs.lightPos - pos;
         float toLightDist = length(toLight);
