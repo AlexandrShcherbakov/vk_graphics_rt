@@ -41,9 +41,9 @@ int main()
 
   initVulkanGLFW(app, window, VULKAN_DEVICE_ID);
 
-  // app->LoadScene("../../resources/scenes/043_cornell_normals/statex_00001.xml");
+  app->LoadScene("../../resources/scenes/043_cornell_normals/statex_00001.xml");
   // app->LoadScene("../../resources/scenes/buggy/Buggy.gltf");
-  app->LoadScene("../../resources/scenes/Cockpits/cr_32_quater_cockpit_Hydra/scenelib_sky_graymat_emissions/statex_00001.xml");
+  // app->LoadScene("../../resources/scenes/Cockpits/cr_32_quater_cockpit_Hydra/scenelib_sky_graymat_emissions/statex_00001.xml");
 
   bool showGUI = true;
   mainLoop(app, window, showGUI);

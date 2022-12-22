@@ -9,7 +9,7 @@ layout(binding = 1, set = 0) buffer rand_points { vec4 points[]; };
 layout(binding = 2, set = 0) buffer out_point { vec4 out_points[]; };
 layout(binding = 3, set = 0) buffer counters { uint indirect_buf[]; };
 layout(binding = 4, set = 0) buffer geom { vec4 geomTriangles[]; };
-layout(binding = 5, set = 0) buffer geomIndices { uvec3 indexBuffer[]; };
+layout(binding = 5, set = 0) buffer geomIndices { uint indexBuffer[]; };
 layout(binding = 6, set = 0) buffer perInstMats { mat4 matrices[]; };
 layout(binding = 7, set = 0) buffer perInstInfo { uvec2 instInfo[]; };
 layout(binding = 8, set = 0) buffer primCounterCount { uint primCounter[]; };
@@ -17,7 +17,7 @@ layout(binding = 8, set = 0) buffer primCounterCount { uint primCounter[]; };
 // RayScene intersection with 'm_pAccelStruct'
 //
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len, inout vec3 target, inout vec3 normal,
-  inout uint startIdxId)
+  inout uint startIdxId, inout uint instId)
 {
   rayQueryEXT rayQuery;
   rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
@@ -30,27 +30,28 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
 	  float t         = rayQueryGetIntersectionTEXT(rayQuery, true);
     int instanceIdx = rayQueryGetIntersectionInstanceCustomIndexEXT(rayQuery, true);
     uint primIdx = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, true);
-    // uint idx1 = indexBuffer[primIdx + instInfo[instanceIdx].x / 3].x;
-    // uint idx2 = indexBuffer[primIdx + instInfo[instanceIdx].x / 3].y;
-    // uint idx3 = indexBuffer[primIdx + instInfo[instanceIdx].x / 3].z;
-    vec4 p1 = (geomTriangles[(primIdx * 3 + instInfo[instanceIdx].x + 0) * 2]);
-    vec4 p2 = (geomTriangles[(primIdx * 3 + instInfo[instanceIdx].x + 1) * 2]);
-    vec4 p3 = (geomTriangles[(primIdx * 3 + instInfo[instanceIdx].x + 2) * 2]);
+    startIdxId = primIdx + instInfo[instanceIdx].x / 3;
+    uint idx1 = indexBuffer[startIdxId * 3 + 0] + instInfo[instanceIdx].y;
+    uint idx2 = indexBuffer[startIdxId * 3 + 1] + instInfo[instanceIdx].y;
+    uint idx3 = indexBuffer[startIdxId * 3 + 2] + instInfo[instanceIdx].y;
+    vec4 p1 = (geomTriangles[idx1 * 2]);
+    vec4 p2 = (geomTriangles[idx2 * 2]);
+    vec4 p3 = (geomTriangles[idx3 * 2]);
 
     vec2 bars     = rayQueryGetIntersectionBarycentricsEXT(rayQuery, true);
 
     vec3 n1 = DecodeNormal(floatBitsToInt(p1.w));
-    // n1    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n1);
+    n1    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n1);
     vec3 n2 = DecodeNormal(floatBitsToInt(p2.w));
-    // n2    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n2);
+    n2    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n2);
     vec3 n3 = DecodeNormal(floatBitsToInt(p3.w));
-    // n3    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n3);
+    n3    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n3);
     normal = normalize(n1 * bars.x + n2 * bars.y + n3 * (1 - bars.x - bars.y));
-    startIdxId = primIdx + instInfo[instanceIdx].x / 3;
+    instId = indexBuffer[3];
 
     target = rayPos + rayDir * t;
-    // if (dot(normal, rayDir) >= 0.0)
-    //   return false;
+    if (dot(normal, rayDir) >= 0.0)
+      return false;
 
     return true;
   }
@@ -124,12 +125,13 @@ void main()
   dir = -offsetMask * offsetSign;
   len = kgenArgs.voxelSize;
   uint startIdxId;
-  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId))
+  uint out_val;
+  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId, out_val))
   {
     float targetLen = length(res - point);
     uint targetIdx = atomicAdd(indirect_buf[indirectOffset + 0], 1) + pointsOffset;
     out_points[targetIdx * 2] = vec4(res, startIdxId);
-    out_points[targetIdx * 2 + 1] = vec4(normal, 0);
+    out_points[targetIdx * 2 + 1] = vec4(normal, uintBitsToFloat(out_val));
     atomicAdd(primCounter[startIdxId], 1);
   }
   // else

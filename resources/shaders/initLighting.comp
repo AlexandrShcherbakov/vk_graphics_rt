@@ -58,8 +58,8 @@ void main()
         vec3 toLightDir = toLight / toLightDist;
         if (m_pAccelStruct_RayQuery_NearestHit(pos, toLightDir, toLightDist))
         {
-          positiveLight += max(vec3(0), toLightDir) * 10;
-          negativeLight += max(vec3(0), -toLightDir) * 10;
+          positiveLight += max(vec3(0), toLightDir);
+          negativeLight += max(vec3(0), -toLightDir);
         }
       }
   for (int i = 0; i < 3; ++i)

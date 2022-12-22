@@ -93,13 +93,18 @@ bool SceneManager::LoadSceneXML(const std::string &scenePath, bool transpose)
         AddBLAS(meshId);
       }
 
-      auto instances = hscene_main->GetAllInstancesOfMeshLoc(loc);
-      for(size_t j = 0; j < instances.size(); ++j)
+      static bool inited = false;
+      if (!inited)
       {
-        if(transpose)
-          InstanceMesh(meshId, LiteMath::transpose(instances[j]));
-        else
-          InstanceMesh(meshId, instances[j]);
+        auto instances = hscene_main->GetAllInstancesOfMeshLoc(loc);
+        for(size_t j = 0; j < instances.size(); ++j)
+        {
+          if(transpose)
+            InstanceMesh(meshId, LiteMath::transpose(instances[j]));
+          else
+            InstanceMesh(meshId, instances[j]);
+        }
+        inited = true;
       }
     }
   }
