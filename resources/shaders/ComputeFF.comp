@@ -17,6 +17,8 @@ layout(binding = 2, set = 0) buffer indir { uint indirection_buf[]; };
 layout(binding = 3, set = 0) buffer geom { vec4 geomTriangles[]; };
 layout(binding = 4, set = 0) buffer primCounterCount { uint primCounter[]; };
 layout(binding = 5, set = 0) buffer ffBuf { float ff[]; };
+layout(binding = 6, set = 0) buffer debugIndirBuf { uint debugIndir[]; };
+layout(binding = 7, set = 0) buffer debugBuf { uint debug[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -53,6 +55,13 @@ void main()
   uint pointsPerVoxel = 6 * kgenArgs.perFacePointsCount;
   uint pointsCount = indirection_buf[baseVoxelId * 4];
 
+  if (gl_GlobalInvocationID.x == 0 && gl_GlobalInvocationID.y == 0)
+  {
+    debugIndir[1] = 1;
+    debugIndir[2] = 0;
+    debugIndir[3] = 0;
+  }
+
   vec3 positiveFF[6];
   vec3 negativeFF[6];
   for (int i = 0; i < 6; ++i)
@@ -75,7 +84,7 @@ void main()
     vec4 p1 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 0) * 2]);
     vec4 p2 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 1) * 2]);
     vec4 p3 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 2) * 2]);
-    float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
+    float primArea = 1.0;//length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
     float geomMult = 1.0 / primArea / 3.1415926535897932;
 
     uint targetPointsOffset = targetVoxelId * pointsPerVoxel;
@@ -99,10 +108,17 @@ void main()
         continue; 
       if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 1e-2, dir, len - 1e-2 * 2.0))
       {
+        if (baseVoxelId == 138 && tid == 0 && false)
+        {
+          uint idx = atomicAdd(debugIndir[0], 2);
+          debug[idx] = i + targetPointsOffset;
+          debug[idx + 1] = tid + sourcePointOffset;
+        }
+        
         vec4 p1 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 0) * 2]);
         vec4 p2 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 1) * 2]);
         vec4 p3 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 2) * 2]);
-        float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5;
+        float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[i + targetPointsOffset].position.w)];
         float ff = min((cosTheta * cosTheta1) / len / len * primArea * geomMult, 1.0);
 
         vec3 targetPositiveWeights = max(targetNormal, vec3(0));

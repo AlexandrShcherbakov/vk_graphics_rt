@@ -47,6 +47,6 @@ void main()
   }
   barrier();
   if (tid == 0)
-    bounce[rowIdx] = lighting[rowIdx];//arrayToConv[0];
+    bounce[rowIdx] = arrayToConv[0];
 }
 

@@ -205,6 +205,17 @@ void SimpleRender::SetupSimplePipeline()
     m_debugPointsPipeline.pipeline = VK_NULL_HANDLE;
   }
 
+  if(m_debugLinesPipeline.layout != VK_NULL_HANDLE)
+  {
+    vkDestroyPipelineLayout(m_device, m_debugLinesPipeline.layout, nullptr);
+    m_debugLinesPipeline.layout = VK_NULL_HANDLE;
+  }
+  if(m_debugLinesPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_debugLinesPipeline.pipeline, nullptr);
+    m_debugLinesPipeline.pipeline = VK_NULL_HANDLE;
+  }
+
   vk_utils::GraphicsPipelineMaker maker;
 
   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
@@ -219,28 +230,64 @@ void SimpleRender::SetupSimplePipeline()
   m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
                                                        m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
 
+  // {
+  //   m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT);
+  //   m_pBindings->BindBuffer(0, samplePointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  //   // m_pBindings->BindBuffer(0, voxelCenterBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  //   m_pBindings->BindEnd(&pointsdSet, &pointsdSetLayout);
+  //   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
+  //   shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/debug_points.frag.spv";
+  //   shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/debug_points.vert.spv";
+
+  //   maker.LoadShaders(m_device, shader_paths);
+
+  //   m_debugPointsPipeline.layout = maker.MakeLayout(m_device, {pointsdSetLayout}, sizeof(pushConst2M));
+  //   maker.SetDefaultState(m_width, m_height);
+
+  //   VkPipelineVertexInputStateCreateInfo vertInfo = {};
+  //   vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+  //   VkPipelineInputAssemblyStateCreateInfo ia = {};
+  //   ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  //   ia.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+  //   m_debugPointsPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
+  //                                                       m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
+  // }
+
   {
     m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT);
     m_pBindings->BindBuffer(0, samplePointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    // m_pBindings->BindBuffer(0, voxelCenterBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    m_pBindings->BindBuffer(1, debugBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     m_pBindings->BindEnd(&pointsdSet, &pointsdSetLayout);
     std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
-    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/debug_points.frag.spv";
-    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/debug_points.vert.spv";
+    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/debug_lines.frag.spv";
+    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/debug_lines.vert.spv";
 
     maker.LoadShaders(m_device, shader_paths);
 
-    m_debugPointsPipeline.layout = maker.MakeLayout(m_device, {pointsdSetLayout}, sizeof(pushConst2M));
+    m_debugLinesPipeline.layout = maker.MakeLayout(m_device, {pointsdSetLayout}, sizeof(pushConst2M));
     maker.SetDefaultState(m_width, m_height);
 
     VkPipelineVertexInputStateCreateInfo vertInfo = {};
     vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     VkPipelineInputAssemblyStateCreateInfo ia = {};
     ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    ia.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-    m_debugPointsPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
+    ia.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    m_debugLinesPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
                                                         m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
   }
+}
+
+float radicalInverse_VdC(uint bits) {
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+}
+
+vec2 hammersley2d(uint i, uint N) {
+    return vec2(float(i)/float(N), radicalInverse_VdC(i));
 }
 
 void SimpleRender::CreateUniformBuffer()
@@ -414,6 +461,38 @@ void SimpleRender::CreateUniformBuffer()
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, reflLightingBuffer, reflLightingMem, 0));
   }
+
+  {
+    VkMemoryRequirements memReq;
+    debugIndirBuffer = vk_utils::createBuffer(m_device, sizeof(uint) * 4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &debugIndirMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, debugIndirBuffer, debugIndirMem, 0));
+  }
+
+  {
+    VkMemoryRequirements memReq;
+    debugBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(uint) * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &debugMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, debugBuffer, debugMem, 0));
+  }
 }
 
 void SimpleRender::UpdateUniformBuffer(float a_time)
@@ -482,10 +561,30 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
 
-    {
-      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
+    // {
+    //   vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
 
-      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
+    //   vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
+    //                           &pointsdSet, 0, VK_NULL_HANDLE);
+
+    //   struct KernelArgsPC
+    //   {
+    //     LiteMath::float4x4 projView;
+    //     uint32_t perFacePointsCount;
+    //   } pcData;
+    //   pcData.projView = pushConst2M.projView;
+    //   pcData.perFacePointsCount = PER_SURFACE_POINTS;
+    //   vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
+    //                       sizeof(pcData), &pcData);
+      
+    //   // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
+    //   vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
+    // }
+
+    {
+      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugLinesPipeline.pipeline);
+
+      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugLinesPipeline.layout, 0, 1,
                               &pointsdSet, 0, VK_NULL_HANDLE);
 
       struct KernelArgsPC
@@ -495,11 +594,10 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       } pcData;
       pcData.projView = pushConst2M.projView;
       pcData.perFacePointsCount = PER_SURFACE_POINTS;
-      vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
+      vkCmdPushConstants(a_cmdBuff, m_debugLinesPipeline.layout, stageFlags, 0,
                           sizeof(pcData), &pcData);
       
-      // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
-      vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
+      vkCmdDrawIndirect(a_cmdBuff, debugIndirBuffer, 0, 1, sizeof(uint32_t) * 4);
     }
 
     vkCmdEndRenderPass(a_cmdBuff);

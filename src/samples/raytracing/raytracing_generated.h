@@ -47,7 +47,9 @@ public:
     VkBuffer areas_buffer,
     VkBuffer ff_clustered_buffer,
     VkBuffer init_lighting_buffer,
-    VkBuffer refl_buffer)
+    VkBuffer refl_buffer,
+    VkBuffer debug_buffer,
+    VkBuffer debug_indir_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -57,6 +59,8 @@ public:
     genSamplesData.matricesBuffer = matrices_buffer;
     genSamplesData.instInfoBuffer = inst_info_buffer;
     genSamplesData.primCounterBuffer = prim_counter_buffer;
+    genSamplesData.debugBuffer = debug_buffer;
+    genSamplesData.debugIndirBuffer = debug_indir_buffer;
     ffData.areas = areas_buffer;
     ffData.clusteredBuffer = ff_clustered_buffer;
     lightingData.initialLighting = init_lighting_buffer;
@@ -186,6 +190,8 @@ protected:
     VkBuffer matricesBuffer = VK_NULL_HANDLE;
     VkBuffer instInfoBuffer = VK_NULL_HANDLE;
     VkBuffer primCounterBuffer = VK_NULL_HANDLE;
+    VkBuffer debugBuffer = VK_NULL_HANDLE;
+    VkBuffer debugIndirBuffer = VK_NULL_HANDLE;
   } genSamplesData;
 
   struct FFData

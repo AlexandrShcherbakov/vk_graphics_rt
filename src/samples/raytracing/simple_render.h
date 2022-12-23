@@ -124,6 +124,7 @@ protected:
 
   pipeline_data_t m_basicForwardPipeline {};
   pipeline_data_t m_debugPointsPipeline {};
+  pipeline_data_t m_debugLinesPipeline {};
 
   VkDescriptorSet m_dSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
@@ -237,6 +238,10 @@ protected:
   VkDeviceMemory initLightingMem = VK_NULL_HANDLE;
   VkBuffer reflLightingBuffer = VK_NULL_HANDLE;
   VkDeviceMemory reflLightingMem = VK_NULL_HANDLE;
+  VkBuffer debugBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory debugMem = VK_NULL_HANDLE;
+  VkBuffer debugIndirBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory debugIndirMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
   const float VOXEL_SIZE = 0.5f;
   LiteMath::uint3 voxelsGrid;

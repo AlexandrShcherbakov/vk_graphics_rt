@@ -15,6 +15,8 @@ if __name__ == '__main__':
         "initLighting.comp",
         "oneBounce.comp",
         "CorrectFF.comp",
+        "debug_lines.vert",
+        "debug_lines.frag",
     ]
 
     for shader in shader_list:
