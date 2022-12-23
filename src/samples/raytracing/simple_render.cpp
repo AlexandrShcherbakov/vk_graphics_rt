@@ -230,28 +230,28 @@ void SimpleRender::SetupSimplePipeline()
   m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
                                                        m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
 
-  // {
-  //   m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT);
-  //   m_pBindings->BindBuffer(0, samplePointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  //   // m_pBindings->BindBuffer(0, voxelCenterBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  //   m_pBindings->BindEnd(&pointsdSet, &pointsdSetLayout);
-  //   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
-  //   shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/debug_points.frag.spv";
-  //   shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/debug_points.vert.spv";
+  {
+    m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT);
+    m_pBindings->BindBuffer(0, samplePointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    // m_pBindings->BindBuffer(0, voxelCenterBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    m_pBindings->BindEnd(&pointsdSet, &pointsdSetLayout);
+    std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
+    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/debug_points.frag.spv";
+    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/debug_points.vert.spv";
 
-  //   maker.LoadShaders(m_device, shader_paths);
+    maker.LoadShaders(m_device, shader_paths);
 
-  //   m_debugPointsPipeline.layout = maker.MakeLayout(m_device, {pointsdSetLayout}, sizeof(pushConst2M));
-  //   maker.SetDefaultState(m_width, m_height);
+    m_debugPointsPipeline.layout = maker.MakeLayout(m_device, {pointsdSetLayout}, sizeof(pushConst2M));
+    maker.SetDefaultState(m_width, m_height);
 
-  //   VkPipelineVertexInputStateCreateInfo vertInfo = {};
-  //   vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  //   VkPipelineInputAssemblyStateCreateInfo ia = {};
-  //   ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  //   ia.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-  //   m_debugPointsPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
-  //                                                       m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
-  // }
+    VkPipelineVertexInputStateCreateInfo vertInfo = {};
+    vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    VkPipelineInputAssemblyStateCreateInfo ia = {};
+    ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    ia.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    m_debugPointsPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
+                                                        m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
+  }
 
   {
     m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT);
@@ -339,8 +339,8 @@ void SimpleRender::CreateUniformBuffer()
     srand(0);
     for (uint32_t i = 0; i < PER_SURFACE_POINTS; ++i)
     {
-      float3 p = ((float3(rand(), rand(), rand()) / RAND_MAX) - 0.5f);
-      points.push_back(to_float4(p, 1.f));
+      float2 p = hammersley2d(i, PER_SURFACE_POINTS) - 0.5;
+      points.push_back(float4(p.x, p.y, 0, 0));
     }
     pointsToDraw = points.size();
     m_pCopyHelper->UpdateBuffer(pointsBuffer, 0, points.data(), points.size() * sizeof(float4));
@@ -561,25 +561,25 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
 
-    // {
-    //   vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
+    {
+      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
 
-    //   vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
-    //                           &pointsdSet, 0, VK_NULL_HANDLE);
+      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
+                              &pointsdSet, 0, VK_NULL_HANDLE);
 
-    //   struct KernelArgsPC
-    //   {
-    //     LiteMath::float4x4 projView;
-    //     uint32_t perFacePointsCount;
-    //   } pcData;
-    //   pcData.projView = pushConst2M.projView;
-    //   pcData.perFacePointsCount = PER_SURFACE_POINTS;
-    //   vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
-    //                       sizeof(pcData), &pcData);
+      struct KernelArgsPC
+      {
+        LiteMath::float4x4 projView;
+        uint32_t perFacePointsCount;
+      } pcData;
+      pcData.projView = pushConst2M.projView;
+      pcData.perFacePointsCount = PER_SURFACE_POINTS;
+      vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
+                          sizeof(pcData), &pcData);
       
-    //   // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
-    //   vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
-    // }
+      // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
+      vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
+    }
 
     {
       vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugLinesPipeline.pipeline);

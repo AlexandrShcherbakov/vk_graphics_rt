@@ -104,7 +104,7 @@ bool SceneManager::LoadSceneXML(const std::string &scenePath, bool transpose)
           else
             InstanceMesh(meshId, instances[j]);
         }
-        inited = true;
+        // inited = true;
       }
     }
   }

@@ -60,18 +60,18 @@ void main()
                 }
                 light[i * 4 + j * 2 + k] = voxLight;
             }
-    // for (int i = 0; i < 4; ++i)
-    // {
-    //     light[i] = mix(light[i], light[i + 4], abs(UVW.x));
-    // }
-    // for (int i = 0; i < 2; ++i)
-    // {
-    //     light[i] = mix(light[i], light[i + 2], abs(UVW.y));
-    // }
-    // light[0] = mix(light[0], light[1], abs(UVW.z));
+    for (int i = 0; i < 4; ++i)
+    {
+        light[i] = mix(light[i], light[i + 4], abs(UVW.x));
+    }
+    for (int i = 0; i < 2; ++i)
+    {
+        light[i] = mix(light[i], light[i + 2], abs(UVW.y));
+    }
+    light[0] = mix(light[0], light[1], abs(UVW.z));
     //138
     out_fragColor = vec4(light[0]);
-    // if (voxelIdx == 33)
+    // if (voxelIdx == 56)
     // {
     //     out_fragColor = vec4(1, 0, 0, 1);
     // }

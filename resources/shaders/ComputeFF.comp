@@ -108,7 +108,7 @@ void main()
         continue; 
       if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 1e-2, dir, len - 1e-2 * 2.0))
       {
-        if (baseVoxelId == 138 && tid == 0 && false)
+        if (baseVoxelId == 56 && tid == 5 && false)
         {
           uint idx = atomicAdd(debugIndir[0], 2);
           debug[idx] = i + targetPointsOffset;

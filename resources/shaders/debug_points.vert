@@ -26,7 +26,7 @@ out gl_PerVertex { vec4 gl_Position; float gl_PointSize; };
 void main(void)
 {
     uint vertexId = gl_VertexIndex + gl_DrawIDARB * 6 * params.perFacePointsCount;
-    gl_Position   = params.mProjView * vec4(points[2 * vertexId].xyz + points[2 * vertexId + 1].xyz * 0.2, 1.0);
+    gl_Position   = params.mProjView * vec4(points[2 * vertexId].xyz + points[2 * vertexId + 1].xyz * 0.0, 1.0);
     // vOut.wNorm = (params.mModel * points[2 * gl_VertexIndex + 1]).xyz;
     vOut.wNorm = vec3(points[2 * vertexId + 1].w);
     gl_PointSize = 2;
