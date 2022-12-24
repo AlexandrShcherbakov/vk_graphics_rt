@@ -198,7 +198,7 @@ void SimpleRender::TraceGenSamples()
       pointsBuffer, indirectPointsBuffer,
       samplePointsBuffer, m_pScnMgr->GetVertexBuffer(), m_pScnMgr->GetIndexBuffer(),
       m_pScnMgr->GetInstanceMatBuffer(), m_pScnMgr->GetMeshInfoBuffer(),
-      primCounterBuffer, areasBuffer, FFClusteredBuffer, initLightingBuffer, reflLightingBuffer,
+      primCounterBuffer, FFClusteredBuffer, initLightingBuffer, reflLightingBuffer,
       debugBuffer, debugIndirBuffer);
     m_pRayTracerGPU->UpdateAll(m_pCopyHelper);
   }

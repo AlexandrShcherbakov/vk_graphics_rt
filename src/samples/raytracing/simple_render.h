@@ -232,8 +232,6 @@ protected:
   VkDeviceMemory primCounterMem = VK_NULL_HANDLE;
   VkBuffer FFClusteredBuffer = VK_NULL_HANDLE;
   VkDeviceMemory FFClusteredMem = VK_NULL_HANDLE;
-  VkBuffer areasBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory areasMem = VK_NULL_HANDLE;
   VkBuffer initLightingBuffer = VK_NULL_HANDLE;
   VkDeviceMemory initLightingMem = VK_NULL_HANDLE;
   VkBuffer reflLightingBuffer = VK_NULL_HANDLE;

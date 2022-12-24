@@ -44,7 +44,6 @@ public:
     VkBuffer matrices_buffer,
     VkBuffer inst_info_buffer,
     VkBuffer prim_counter_buffer,
-    VkBuffer areas_buffer,
     VkBuffer ff_clustered_buffer,
     VkBuffer init_lighting_buffer,
     VkBuffer refl_buffer,
@@ -61,7 +60,6 @@ public:
     genSamplesData.primCounterBuffer = prim_counter_buffer;
     genSamplesData.debugBuffer = debug_buffer;
     genSamplesData.debugIndirBuffer = debug_indir_buffer;
-    ffData.areas = areas_buffer;
     ffData.clusteredBuffer = ff_clustered_buffer;
     lightingData.initialLighting = init_lighting_buffer;
     lightingData.reflLighting = refl_buffer;
@@ -196,7 +194,6 @@ protected:
 
   struct FFData
   {
-    VkBuffer areas = VK_NULL_HANDLE;
     VkBuffer clusteredBuffer = VK_NULL_HANDLE;
   } ffData;
 
