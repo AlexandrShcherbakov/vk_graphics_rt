@@ -208,6 +208,8 @@ void SimpleRender::TraceGenSamples()
   
   // do ray tracing
   //
+  static bool inited = false;
+  if (!inited)
   {
     VkCommandBuffer commandBuffer = vk_utils::createCommandBuffer(m_device, m_commandPool);
 
@@ -231,5 +233,6 @@ void SimpleRender::TraceGenSamples()
     vkEndCommandBuffer(commandBuffer);
 
     vk_utils::executeCommandBufferNow(commandBuffer, m_graphicsQueue, m_device);
+    inited = true;
   }
 }

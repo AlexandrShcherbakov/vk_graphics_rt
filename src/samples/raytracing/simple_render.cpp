@@ -561,25 +561,25 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
 
-    {
-      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
+    // {
+    //   vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
 
-      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
-                              &pointsdSet, 0, VK_NULL_HANDLE);
+    //   vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
+    //                           &pointsdSet, 0, VK_NULL_HANDLE);
 
-      struct KernelArgsPC
-      {
-        LiteMath::float4x4 projView;
-        uint32_t perFacePointsCount;
-      } pcData;
-      pcData.projView = pushConst2M.projView;
-      pcData.perFacePointsCount = PER_SURFACE_POINTS;
-      vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
-                          sizeof(pcData), &pcData);
+    //   struct KernelArgsPC
+    //   {
+    //     LiteMath::float4x4 projView;
+    //     uint32_t perFacePointsCount;
+    //   } pcData;
+    //   pcData.projView = pushConst2M.projView;
+    //   pcData.perFacePointsCount = PER_SURFACE_POINTS;
+    //   vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
+    //                       sizeof(pcData), &pcData);
       
-      // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
-      vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
-    }
+    //   // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
+    //   vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
+    // }
 
     {
       vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugLinesPipeline.pipeline);
