@@ -290,6 +290,16 @@ vec2 hammersley2d(uint i, uint N) {
     return vec2(float(i)/float(N), radicalInverse_VdC(i));
 }
 
+void SimpleRender::setObjectName(VkBuffer buffer, const char *name)
+{
+  VkDebugMarkerObjectNameInfoEXT nameInfo = {};
+  nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+  nameInfo.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT;
+  nameInfo.object = (uint64_t)buffer;
+  nameInfo.pObjectName = name;
+  vkDebugMarkerSetObjectNameEXT(m_device, &nameInfo);
+}
+
 void SimpleRender::CreateUniformBuffer()
 {
   VkMemoryRequirements memReq;
@@ -325,6 +335,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     pointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * PER_SURFACE_POINTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    setObjectName(pointsBuffer, "random_points");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -350,6 +361,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     indirectPointsBuffer = vk_utils::createBuffer(m_device, sizeof(uint4) * voxelsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    setObjectName(indirectPointsBuffer, "point_counters");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -365,6 +377,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     samplePointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * 2 * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    setObjectName(samplePointsBuffer, "samples");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -386,6 +399,7 @@ void SimpleRender::CreateUniformBuffer()
     trianglesCount /= 3;
     VkMemoryRequirements memReq;
     primCounterBuffer = vk_utils::createBuffer(m_device, sizeof(uint32_t) * trianglesCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    setObjectName(primCounterBuffer, "samplesPerTriangles");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -403,6 +417,7 @@ void SimpleRender::CreateUniformBuffer()
     clustersCount = visibleVoxelsApproxCount * PER_VOXEL_CLUSTERS;
     VkMemoryRequirements memReq;
     FFClusteredBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    setObjectName(FFClusteredBuffer, "FF");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -419,6 +434,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     initLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    setObjectName(initLightingBuffer, "initial_lighting");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -435,6 +451,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     reflLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    setObjectName(reflLightingBuffer, "reflected_lighting");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -451,6 +468,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     debugIndirBuffer = vk_utils::createBuffer(m_device, sizeof(uint) * 4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    setObjectName(debugIndirBuffer, "debug_lines_counter");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -467,6 +485,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     debugBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(uint) * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    setObjectName(debugBuffer, "debug_lines");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -483,6 +502,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     nonEmptyVoxelsBuffer = vk_utils::createBuffer(m_device, sizeof(uint) * voxelsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    setObjectName(nonEmptyVoxelsBuffer, "visible_voxels");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -500,6 +520,7 @@ void SimpleRender::CreateUniformBuffer()
     VkMemoryRequirements memReq;
     indirVoxelsBuffer = vk_utils::createBuffer(m_device, sizeof(uint) * 4 * 2,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &memReq);
+    setObjectName(indirVoxelsBuffer, "visible_voxels_counter");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -516,6 +537,7 @@ void SimpleRender::CreateUniformBuffer()
   {
     VkMemoryRequirements memReq;
     appliedLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * voxelsCount * 6, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    setObjectName(appliedLightingBuffer, "final_lighting");
 
     VkMemoryAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;

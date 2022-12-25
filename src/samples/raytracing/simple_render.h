@@ -218,6 +218,7 @@ protected:
   void SetupDeviceExtensions();
   void SetupValidationLayers();
   void GetBbox();
+  void setObjectName(VkBuffer buffer, const char *name);
   const uint32_t PER_SURFACE_POINTS = 16;
   const uint32_t PER_VOXEL_POINTS = PER_SURFACE_POINTS * 6;
   const uint32_t PER_VOXEL_CLUSTERS = 6;
