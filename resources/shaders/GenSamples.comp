@@ -13,6 +13,8 @@ layout(binding = 5, set = 0) buffer geomIndices { uint indexBuffer[]; };
 layout(binding = 6, set = 0) buffer perInstMats { mat4 matrices[]; };
 layout(binding = 7, set = 0) buffer perInstInfo { uvec2 instInfo[]; };
 layout(binding = 8, set = 0) buffer primCounterCount { uint primCounter[]; };
+layout(binding = 9, set = 0) buffer usedVoxelsBuffer { uint usedBuffers[]; };
+layout(binding = 10, set = 0) buffer usedVoxelsCountBuffer { uint usedVoxelsCount[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -82,6 +84,13 @@ void main()
   uvec3 voxelsExtend = uvec3(ceil((kgenArgs.bmax - kgenArgs.bmin) / kgenArgs.voxelSize));
   uint pointsCount = voxelsExtend.x * voxelsExtend.y * voxelsExtend.z * 6 * kgenArgs.perFacePointsCount;
 
+  if (tid == 0)
+  {
+    usedVoxelsCount[1] = 1;
+    usedVoxelsCount[2] = 1;
+    usedVoxelsCount[5] = 1;
+  }
+
   if (tid >= pointsCount)
     return;
 
@@ -143,6 +152,13 @@ void main()
     out_points[targetIdx * 2] = vec4(res, startIdxId);
     out_points[targetIdx * 2 + 1] = vec4(normal, uintBitsToFloat(out_val));
     atomicAdd(primCounter[startIdxId], 1);
+    if (targetIdx == pointsOffset)
+    {
+      uint voxelPlaceId = atomicAdd(usedVoxelsCount[0], 1);
+      usedBuffers[voxelPlaceId] = voxelIdx;
+      atomicMax(usedVoxelsCount[3], voxelPlaceId + 1);
+      atomicMax(usedVoxelsCount[4], voxelPlaceId + 1);
+    }
   }
   // else
   // {

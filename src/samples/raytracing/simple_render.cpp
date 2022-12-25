@@ -477,6 +477,39 @@ void SimpleRender::CreateUniformBuffer()
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, debugBuffer, debugMem, 0));
   }
+
+  {
+    VkMemoryRequirements memReq;
+    nonEmptyVoxelsBuffer = vk_utils::createBuffer(m_device, sizeof(uint) * voxelsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &nonEmptyVoxelsMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, nonEmptyVoxelsBuffer, nonEmptyVoxelsMem, 0));
+  }
+
+  {
+    VkMemoryRequirements memReq;
+    indirVoxelsBuffer = vk_utils::createBuffer(m_device, sizeof(uint) * 4 * 2,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &indirVoxelsMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, indirVoxelsBuffer, indirVoxelsMem, 0));
+  }
 }
 
 void SimpleRender::UpdateUniformBuffer(float a_time)

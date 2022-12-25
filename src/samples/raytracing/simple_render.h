@@ -240,12 +240,17 @@ protected:
   VkDeviceMemory debugMem = VK_NULL_HANDLE;
   VkBuffer debugIndirBuffer = VK_NULL_HANDLE;
   VkDeviceMemory debugIndirMem = VK_NULL_HANDLE;
+  VkBuffer indirVoxelsBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory indirVoxelsMem = VK_NULL_HANDLE;
+  VkBuffer nonEmptyVoxelsBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory nonEmptyVoxelsMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
-  const float VOXEL_SIZE = 0.25f;
+  const float VOXEL_SIZE = 0.5f;
   LiteMath::uint3 voxelsGrid;
   uint32_t voxelsCount = 0;
   uint32_t clustersCount = 0;
   uint32_t maxPointsCount = 0;
+  uint32_t visibleVoxelsCount = 0;
 };
 
 

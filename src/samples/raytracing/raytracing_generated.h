@@ -48,7 +48,9 @@ public:
     VkBuffer init_lighting_buffer,
     VkBuffer refl_buffer,
     VkBuffer debug_buffer,
-    VkBuffer debug_indir_buffer)
+    VkBuffer debug_indir_buffer,
+    VkBuffer voxel_indices,
+    VkBuffer voxel_indices_indir)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -63,6 +65,8 @@ public:
     ffData.clusteredBuffer = ff_clustered_buffer;
     lightingData.initialLighting = init_lighting_buffer;
     lightingData.reflLighting = refl_buffer;
+    voxelsData.voxelsIndices = voxel_indices;
+    voxelsData.voxelsIndicesIndir = voxel_indices_indir;
     InitAllGeneratedDescriptorSets_GenSamples();
     InitAllGeneratedDescriptorSets_ComputeFF();
     InitAllGeneratedDescriptorSets_InitLighting();
@@ -191,6 +195,12 @@ protected:
     VkBuffer debugBuffer = VK_NULL_HANDLE;
     VkBuffer debugIndirBuffer = VK_NULL_HANDLE;
   } genSamplesData;
+
+  struct Voxels
+  {
+    VkBuffer voxelsIndices = VK_NULL_HANDLE;
+    VkBuffer voxelsIndicesIndir = VK_NULL_HANDLE;
+  } voxelsData;
 
   struct FFData
   {
