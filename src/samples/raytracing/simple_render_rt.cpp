@@ -235,6 +235,7 @@ void SimpleRender::TraceGenSamples()
     {
       m_pCopyHelper->ReadBuffer(indirVoxelsBuffer, 0, &visibleVoxelsCount, sizeof(visibleVoxelsCount));
       std::cout << "Visible voxels count " << visibleVoxelsCount << std::endl;
+      assert(visibleVoxelsApproxCount >= visibleVoxelsCount);
     }
     {
       VkCommandBuffer commandBuffer = vk_utils::createCommandBuffer(m_device, m_commandPool);

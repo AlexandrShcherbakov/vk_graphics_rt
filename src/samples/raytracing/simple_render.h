@@ -251,6 +251,7 @@ protected:
   uint32_t clustersCount = 0;
   uint32_t maxPointsCount = 0;
   uint32_t visibleVoxelsCount = 0;
+  uint32_t visibleVoxelsApproxCount = 0;
 };
 
 
