@@ -316,3 +316,23 @@ void RayTracer_Generated::CorrectFFCmd(VkCommandBuffer a_commandBuffer, uint32_t
   vkCmdDispatch    (m_currCmdBuffer, voxels_count, 1, 1);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }
+
+void RayTracer_Generated::finalLightingCmd(VkCommandBuffer a_commandBuffer, uint32_t visible_voxels_count)
+{
+  m_currCmdBuffer = a_commandBuffer;
+  VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
+  uint32_t blockSizeX = 256;
+
+  struct KernelArgsPC
+  {
+    uint32_t visibleVoxelsCount;
+  } pcData;
+
+  pcData.visibleVoxelsCount = visible_voxels_count;
+
+  vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, finalLightingLayout, 0, 1, &m_allGeneratedDS[6], 0, nullptr);
+  vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, finalLightingPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (visible_voxels_count + 255) / 256, 1, 1);
+  vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
+}

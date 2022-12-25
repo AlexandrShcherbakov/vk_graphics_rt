@@ -19,6 +19,7 @@ layout(binding = 4, set = 0) buffer primCounterCount { uint primCounter[]; };
 layout(binding = 5, set = 0) buffer ffBuf { float ff[]; };
 layout(binding = 6, set = 0) buffer debugIndirBuf { uint debugIndir[]; };
 layout(binding = 7, set = 0) buffer debugBuf { uint debug[]; };
+layout(binding = 8, set = 0) buffer voxelIndicesBuf { uint voxelIndices[]; };
 
 // RayScene intersection with 'm_pAccelStruct'
 //
@@ -50,8 +51,10 @@ shared vec3 arrayToConv[256];
 void main()
 {
   uint tid = uint(gl_LocalInvocationID[0]);
-  uint baseVoxelId = uint(gl_WorkGroupID.x);
-  uint targetVoxelId = uint(gl_WorkGroupID.y);
+  uint baseVisVoxelId = uint(gl_WorkGroupID.x);
+  uint targetVisVoxelId = uint(gl_WorkGroupID.y);
+  uint baseVoxelId = voxelIndices[baseVisVoxelId];
+  uint targetVoxelId = voxelIndices[targetVisVoxelId];
   uint pointsPerVoxel = 6 * kgenArgs.perFacePointsCount;
   uint pointsCount = indirection_buf[baseVoxelId * 4];
 
@@ -108,7 +111,7 @@ void main()
         continue; 
       if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 1e-2, dir, len - 1e-2 * 2.0))
       {
-        if (baseVoxelId == 56 && tid == 5 && false)
+        if (baseVoxelId == 138 && tid == 5 && false)
         {
           uint idx = atomicAdd(debugIndir[0], 2);
           debug[idx] = i + targetPointsOffset;
@@ -150,7 +153,7 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + j] = arrayToConv[0][j];
+        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + j] = arrayToConv[0][j];
     }
 
     barrier();
@@ -167,7 +170,7 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVoxelId * 6 + 3 + j] = arrayToConv[0][j];
+        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + 3 + j] = arrayToConv[0][j];
     }
   }
 }

@@ -17,6 +17,7 @@ if __name__ == '__main__':
         "CorrectFF.comp",
         "debug_lines.vert",
         "debug_lines.frag",
+        "FinalLighting.comp",
     ]
 
     for shader in shader_list:

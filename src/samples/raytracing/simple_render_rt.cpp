@@ -199,7 +199,8 @@ void SimpleRender::TraceGenSamples()
       samplePointsBuffer, m_pScnMgr->GetVertexBuffer(), m_pScnMgr->GetIndexBuffer(),
       m_pScnMgr->GetInstanceMatBuffer(), m_pScnMgr->GetMeshInfoBuffer(),
       primCounterBuffer, FFClusteredBuffer, initLightingBuffer, reflLightingBuffer,
-      debugBuffer, debugIndirBuffer, nonEmptyVoxelsBuffer, indirVoxelsBuffer);
+      debugBuffer, debugIndirBuffer, nonEmptyVoxelsBuffer, indirVoxelsBuffer,
+      appliedLightingBuffer);
     m_pRayTracerGPU->UpdateAll(m_pCopyHelper);
   }
 
@@ -222,7 +223,6 @@ void SimpleRender::TraceGenSamples()
       vkCmdFillBuffer(commandBuffer, indirectPointsBuffer, 0, sizeof(uint32_t) * 4 * voxelsCount, 0);
       vkCmdFillBuffer(commandBuffer, debugIndirBuffer, 0, sizeof(uint32_t) * 4, 0);
       vkCmdFillBuffer(commandBuffer, primCounterBuffer, 0, sizeof(uint32_t) * trianglesCount, 0);
-      vkCmdFillBuffer(commandBuffer, FFClusteredBuffer, 0, sizeof(float) * clustersCount * clustersCount, 0);
       vkCmdFillBuffer(commandBuffer, indirVoxelsBuffer, 0, sizeof(uint32_t) * 4 * 2, 0);
       m_pRayTracerGPU->GenSamplesCmd(commandBuffer, PER_SURFACE_POINTS,
         to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), VOXEL_SIZE, m_uniforms.time, m_pScnMgr->GetInstanceMatrix(0));
@@ -245,11 +245,14 @@ void SimpleRender::TraceGenSamples()
       beginCommandBufferInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
       vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
-      m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, voxelsCount);
-      m_pRayTracerGPU->CorrectFFCmd(commandBuffer, voxelsCount);
-      m_pRayTracerGPU->initLightingCmd(commandBuffer, voxelsCount, VOXEL_SIZE,
+      vkCmdFillBuffer(commandBuffer, FFClusteredBuffer, 0, sizeof(float) * clustersCount * clustersCount, 0);
+      vkCmdFillBuffer(commandBuffer, appliedLightingBuffer, 0, sizeof(float) * voxelsCount * 6, 0);
+      m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, visibleVoxelsCount);
+      m_pRayTracerGPU->CorrectFFCmd(commandBuffer, visibleVoxelsCount);
+      m_pRayTracerGPU->initLightingCmd(commandBuffer, visibleVoxelsCount, VOXEL_SIZE,
         to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos));
-      m_pRayTracerGPU->reflLightingCmd(commandBuffer, voxelsCount);
+      m_pRayTracerGPU->reflLightingCmd(commandBuffer, visibleVoxelsCount);
+      m_pRayTracerGPU->finalLightingCmd(commandBuffer, visibleVoxelsCount);
 
       vkEndCommandBuffer(commandBuffer);
 

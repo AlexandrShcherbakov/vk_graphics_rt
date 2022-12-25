@@ -178,7 +178,7 @@ void SimpleRender::SetupSimplePipeline()
 {
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  m_pBindings->BindBuffer(1, reflLightingBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  m_pBindings->BindBuffer(1, appliedLightingBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   // if we are recreating pipeline (for example, to reload shaders)
@@ -400,7 +400,7 @@ void SimpleRender::CreateUniformBuffer()
   }
 
   {
-    clustersCount = voxelsCount * PER_VOXEL_CLUSTERS;
+    clustersCount = visibleVoxelsApproxCount * PER_VOXEL_CLUSTERS;
     VkMemoryRequirements memReq;
     FFClusteredBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
 
@@ -511,6 +511,22 @@ void SimpleRender::CreateUniformBuffer()
     VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &indirVoxelsMem));
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, indirVoxelsBuffer, indirVoxelsMem, 0));
+  }
+
+  {
+    VkMemoryRequirements memReq;
+    appliedLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * voxelsCount * 6, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &appliedLightingMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, appliedLightingBuffer, appliedLightingMem, 0));
   }
 }
 

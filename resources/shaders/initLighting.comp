@@ -7,6 +7,7 @@
 layout(binding = 0, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
 
 layout(binding = 1, set = 0) buffer lighting_buf { float lighting[]; };
+layout(binding = 2, set = 0) buffer voxelIndicesBuf { uint voxelIndices[]; };
 
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len)
 {
@@ -37,10 +38,11 @@ shared vec3 arrayToConv[256];
 
 void main()
 {
-  uint voxelId = uint(gl_GlobalInvocationID[0]);
+  uint tid = gl_GlobalInvocationID.x;
   uvec3 voxelsExtend = uvec3(ceil((kgenArgs.bmax - kgenArgs.bmin) / kgenArgs.voxelSize));
-  if (voxelId >= voxelsExtend.x * voxelsExtend.y * voxelsExtend.z)
+  if (tid.x >= kgenArgs.voxelsCount)
     return;
+  uint voxelId = voxelIndices[tid];
 
   uvec3 voxelIdx = uvec3(voxelId / voxelsExtend.z / voxelsExtend.y, voxelId / voxelsExtend.z % voxelsExtend.y, voxelId % voxelsExtend.z);
   vec3 center = kgenArgs.bmin + (voxelIdx + 0.5) * kgenArgs.voxelSize;
@@ -64,8 +66,8 @@ void main()
       }
   for (int i = 0; i < 3; ++i)
   {
-    lighting[voxelId * 6 + i] = positiveLight[i] / perAxisCnt / perAxisCnt / perAxisCnt;
-    lighting[voxelId * 6 + 3 + i] = negativeLight[i] / perAxisCnt / perAxisCnt / perAxisCnt;
+    lighting[tid * 6 + i] = positiveLight[i] / perAxisCnt / perAxisCnt / perAxisCnt;
+    lighting[tid * 6 + 3 + i] = negativeLight[i] / perAxisCnt / perAxisCnt / perAxisCnt;
   }
   
 }

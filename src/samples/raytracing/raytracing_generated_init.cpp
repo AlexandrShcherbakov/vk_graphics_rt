@@ -59,6 +59,21 @@ RayTracer_Generated::~RayTracer_Generated()
   reflLightingPipeline = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, reflLightingDSLayout, nullptr);
   reflLightingDSLayout = VK_NULL_HANDLE;
+  
+  vkDestroyPipeline(device, correctFFPipeline, nullptr);
+  vkDestroyPipelineLayout(device, correctFFLayout, nullptr);
+  correctFFLayout   = VK_NULL_HANDLE;
+  correctFFPipeline = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, correctFFDSLayout, nullptr);
+  correctFFDSLayout = VK_NULL_HANDLE;
+  reflLightingDSLayout = VK_NULL_HANDLE;
+  
+  vkDestroyPipeline(device, finalLightingPipeline, nullptr);
+  vkDestroyPipelineLayout(device, finalLightingLayout, nullptr);
+  finalLightingLayout   = VK_NULL_HANDLE;
+  finalLightingPipeline = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, finalLightingDSLayout, nullptr);
+  finalLightingDSLayout = VK_NULL_HANDLE;
 
   vkDestroyPipeline(device, GenSamplesPipeline, nullptr);
   vkDestroyPipelineLayout(device, GenSamplesLayout, nullptr);
@@ -152,7 +167,7 @@ VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::CreateComputeFFDSLayout()
 {
-  const uint32_t BUFFERS_COUNT = 7;
+  const uint32_t BUFFERS_COUNT = 8;
   std::array<VkDescriptorSetLayoutBinding, 1 + BUFFERS_COUNT> dsBindings;
 
   // binding for m_pAccelStruct
@@ -184,7 +199,7 @@ VkDescriptorSetLayout RayTracer_Generated::CreateComputeFFDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::CreateInitLightingDSLayout()
 {
-  const uint32_t BUFFERS_COUNT = 1;
+  const uint32_t BUFFERS_COUNT = 2;
   std::array<VkDescriptorSetLayoutBinding, 1 + BUFFERS_COUNT> dsBindings;
 
   // binding for m_pAccelStruct
@@ -242,6 +257,31 @@ VkDescriptorSetLayout RayTracer_Generated::CreateReflLightingDSLayout()
 VkDescriptorSetLayout RayTracer_Generated::CreateCorrectFFDSLayout()
 {
   const uint32_t BUFFERS_COUNT = 1;
+  std::array<VkDescriptorSetLayoutBinding, BUFFERS_COUNT> dsBindings;
+
+  for (uint32_t i = 0; i < BUFFERS_COUNT; ++i)
+  {
+    const uint32_t bindingId = i;
+    dsBindings[bindingId].binding            = bindingId;
+    dsBindings[bindingId].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    dsBindings[bindingId].descriptorCount    = 1;
+    dsBindings[bindingId].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+    dsBindings[bindingId].pImmutableSamplers = nullptr;  
+  }
+  
+  VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+  descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  descriptorSetLayoutCreateInfo.bindingCount = uint32_t(dsBindings.size());
+  descriptorSetLayoutCreateInfo.pBindings    = dsBindings.data();
+  
+  VkDescriptorSetLayout layout = nullptr;
+  VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, NULL, &layout));
+  return layout;
+}
+
+VkDescriptorSetLayout RayTracer_Generated::CreateFinalLightingDSLayout()
+{
+  const uint32_t BUFFERS_COUNT = 3;
   std::array<VkDescriptorSetLayoutBinding, BUFFERS_COUNT> dsBindings;
 
   for (uint32_t i = 0; i < BUFFERS_COUNT; ++i)
@@ -329,6 +369,12 @@ void RayTracer_Generated::InitKernel_CastSingleRayMega(const char* a_filePath)
   correctFFDSLayout = CreateCorrectFFDSLayout();
   correctFFLayout = m_pMaker->MakeLayout(device, { correctFFDSLayout }, 128);
   correctFFPipeline = m_pMaker->MakePipeline(device);
+
+  shaderPath = AlterShaderPath("../../../resources/shaders/FinalLighting.comp.spv");
+  m_pMaker->LoadShader(device, shaderPath.c_str(), nullptr, "main");
+  finalLightingDSLayout = CreateFinalLightingDSLayout();
+  finalLightingLayout = m_pMaker->MakeLayout(device, { finalLightingDSLayout }, 128);
+  finalLightingPipeline = m_pMaker->MakePipeline(device);
 }
 
 
