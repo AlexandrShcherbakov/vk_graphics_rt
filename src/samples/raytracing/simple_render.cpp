@@ -292,6 +292,8 @@ vec2 hammersley2d(uint i, uint N) {
 
 void SimpleRender::setObjectName(VkBuffer buffer, const char *name)
 {
+  if (!vkDebugMarkerSetObjectNameEXT)
+    return;
   VkDebugMarkerObjectNameInfoEXT nameInfo = {};
   nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
   nameInfo.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT;
