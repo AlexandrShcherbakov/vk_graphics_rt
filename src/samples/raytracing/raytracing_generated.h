@@ -100,7 +100,8 @@ public:
     LiteMath::float3 bmax,
     float voxel_size,
     float time,
-    LiteMath::float4x4 matrix);
+    LiteMath::float4x4 matrix,
+    uint32_t max_points_count);
 
   virtual void copyKernelFloatCmd(uint32_t length);
   
@@ -110,10 +111,10 @@ public:
     LiteMath::float3 bmax,
     float voxel_size,
     float time,
-    LiteMath::float4x4 matrix);
+    LiteMath::float4x4 matrix,
+    uint32_t max_points_count);
 
-  virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count);
-  void ComputeFFCmd(uint32_t points_per_voxel, uint32_t voxels_count);
+  virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out, uint32_t ff_in, uint32_t ff_to_update);
   void initLightingCmd(VkCommandBuffer a_commandBuffer,
     uint32_t voxels_count,
     float voxel_size,

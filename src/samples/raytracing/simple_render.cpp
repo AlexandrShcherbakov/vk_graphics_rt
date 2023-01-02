@@ -331,7 +331,7 @@ void SimpleRender::CreateUniformBuffer()
   voxelsCount = voxelsGrid.x * voxelsGrid.y * voxelsGrid.z;
   maxPointsCount = voxelsCount * 6 * PER_SURFACE_POINTS;
   std::cout << "Voxels count " << voxelsCount << std::endl;
-  visibleVoxelsApproxCount = voxelsCount * 0.51;
+  visibleVoxelsApproxCount = voxelsCount * 0.27f;
   std::cout << "Approximate visible voxels count " << visibleVoxelsApproxCount << std::endl;
 
   {

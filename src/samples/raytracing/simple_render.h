@@ -248,13 +248,21 @@ protected:
   VkBuffer appliedLightingBuffer = VK_NULL_HANDLE;
   VkDeviceMemory appliedLightingMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
-  const float VOXEL_SIZE = 0.5f;
+  const float VOXEL_SIZE = 0.125f;
   LiteMath::uint3 voxelsGrid;
   uint32_t voxelsCount = 0;
   uint32_t clustersCount = 0;
   uint32_t maxPointsCount = 0;
   uint32_t visibleVoxelsCount = 0;
   uint32_t visibleVoxelsApproxCount = 0;
+
+  struct ComputeState
+  {
+    uint32_t ff_out = 0;
+    uint32_t ff_in = 0;
+    uint32_t version = 0;
+  } computeState;
+   const uint32_t FF_UPDATE_COUNT = 2000;
 };
 
 

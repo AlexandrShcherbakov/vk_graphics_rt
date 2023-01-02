@@ -72,8 +72,6 @@ layout( push_constant ) uniform kernelArgs
   uint perFacePointsCount;
   vec3 bmax;
   float voxelSize;
-  mat4 mModel;
-  float time;
 } kgenArgs;
 
 
