@@ -19,7 +19,7 @@ layout(binding = 10, set = 0) buffer usedVoxelsCountBuffer { uint usedVoxelsCoun
 // RayScene intersection with 'm_pAccelStruct'
 //
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len, inout vec3 target, inout vec3 normal,
-  inout uint startIdxId, inout uint instId)
+  inout uint startIdxId, inout float area)
 {
   rayQueryEXT rayQuery;
   rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
@@ -49,7 +49,10 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
     vec3 n3 = DecodeNormal(floatBitsToInt(p3.w));
     n3    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n3);
     normal = normalize(n1 * bars.x + n2 * bars.y + n3 * (1 - bars.x - bars.y));
-    instId = indexBuffer[3];
+    vec3 point1 = mat3(transpose(inverse(matrices[instanceIdx]))) * p1.xyz;
+    vec3 point2 = mat3(transpose(inverse(matrices[instanceIdx]))) * p2.xyz;
+    vec3 point3 = mat3(transpose(inverse(matrices[instanceIdx]))) * p3.xyz;
+    area = length(cross(point2 - point1, point3 - point1)) * 0.5;
 
     target = rayPos + rayDir * t;
     if (dot(normal, rayDir) >= 0.0)
@@ -142,13 +145,13 @@ void main()
   dir = -offsetMask * offsetSign;
   len = kgenArgs.voxelSize;
   uint startIdxId;
-  uint out_val;
-  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId, out_val))
+  float area;
+  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId, area))
   {
     float targetLen = length(res - point);
     uint targetIdx = atomicAdd(indirect_buf[indirectOffset + 0], 1) + pointsOffset;
     out_points[targetIdx * 2] = vec4(res, startIdxId);
-    out_points[targetIdx * 2 + 1] = vec4(normal, uintBitsToFloat(out_val));
+    out_points[targetIdx * 2 + 1] = vec4(normal, area);
     atomicAdd(primCounter[startIdxId], 1);
     if (targetIdx == pointsOffset)
     {

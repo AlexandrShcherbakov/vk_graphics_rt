@@ -92,7 +92,7 @@ void main()
     vec4 p3 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 2) * 2]);
     float primArea = 1.0;//length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
     float geomMult = 1.0 / primArea / 3.1415926535897932;
-    float areas = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
+    float areas = points[tid + sourcePointOffset].normal.w / primCounter[uint(points[tid + sourcePointOffset].position.w)];
     positiveAreas = max(vec3(0), normal * areas);
     negativeAreas = max(vec3(0), -normal * areas);
 
@@ -127,7 +127,7 @@ void main()
         vec4 p1 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 0) * 2]);
         vec4 p2 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 1) * 2]);
         vec4 p3 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 2) * 2]);
-        float primArea = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[i + targetPointsOffset].position.w)];
+        float primArea = points[i + targetPointsOffset].normal.w / primCounter[uint(points[i + targetPointsOffset].position.w)];
         float ff = min((cosTheta * cosTheta1) / len / len * primArea * geomMult, 1.0);
 
         vec3 targetPositiveWeights = max(targetNormal, vec3(0));
