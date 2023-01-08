@@ -73,6 +73,8 @@ void main()
     positiveFF[i] = vec3(0);
     negativeFF[i] = vec3(0);
   }
+  vec3 positiveAreas = vec3(0);
+  vec3 negativeAreas = vec3(0);
   if (tid < pointsCount)
   {
     uint sourcePointOffset = baseVoxelId * pointsPerVoxel;
@@ -90,6 +92,9 @@ void main()
     vec4 p3 = (geomTriangles[uint(points[tid + sourcePointOffset].position.w * 3 + 2) * 2]);
     float primArea = 1.0;//length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
     float geomMult = 1.0 / primArea / 3.1415926535897932;
+    float areas = length(cross(p2.xyz - p1.xyz, p3.xyz - p1.xyz)) * 0.5 / primCounter[uint(points[tid + sourcePointOffset].position.w)];
+    positiveAreas = max(vec3(0), normal * areas);
+    negativeAreas = max(vec3(0), -normal * areas);
 
     uint targetPointsOffset = targetVoxelId * pointsPerVoxel;
     uint targetPointsCount = indirection_buf[targetVoxelId * 4];
@@ -138,10 +143,42 @@ void main()
       }
     }
   }
+  vec3 positiveAreaInvSum = vec3(0);
+  vec3 negativeAreaInvSum = vec3(0);
+  {
+    barrier();
+    arrayToConv[tid] = positiveAreas;
+    for (uint d = 128; d > 0; d >>= 1)
+    {
+      barrier();
+      if (tid < d)
+      {
+        arrayToConv[tid] += arrayToConv[tid + d];
+      }
+    }
+    barrier();
+    for (int i = 0; i < 3; ++i)
+      positiveAreaInvSum[i] = arrayToConv[0][i] > 1e-5 ? 1.0 / arrayToConv[0][i] : 0.0;
+  }
+  {
+    barrier();
+    arrayToConv[tid] = negativeAreas;
+    for (uint d = 128; d > 0; d >>= 1)
+    {
+      barrier();
+      if (tid < d)
+      {
+        arrayToConv[tid] += arrayToConv[tid + d];
+      }
+    }
+    barrier();
+    for (int i = 0; i < 3; ++i)
+      negativeAreaInvSum[i] = arrayToConv[0][i] > 1e-5 ? 1.0 / arrayToConv[0][i] : 0.0;
+  }
   for (int i = 0; i < 6; ++i)
   {
     barrier();
-    arrayToConv[tid] = positiveFF[i];
+    arrayToConv[tid] = positiveFF[i] * (i < 3 ? positiveAreas[i] : negativeAreas[i - 3]);
     for (uint d = 128; d > 0; d >>= 1)
     {
       barrier();
@@ -154,11 +191,12 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + j] = arrayToConv[0][j];
+        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + j] = arrayToConv[0][j]
+          * (i < 3 ? positiveAreaInvSum[i] : negativeAreaInvSum[i - 3]);
     }
 
     barrier();
-    arrayToConv[tid] = negativeFF[i];
+    arrayToConv[tid] = negativeFF[i] * (i < 3 ? positiveAreas[i] : negativeAreas[i - 3]);
     for (uint d = 128; d > 0; d >>= 1)
     {
       barrier();
@@ -171,7 +209,8 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + 3 + j] = arrayToConv[0][j];
+        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + 3 + j] = arrayToConv[0][j]
+          * (i < 3 ? positiveAreaInvSum[i] : negativeAreaInvSum[i - 3]);
     }
   }
 }
