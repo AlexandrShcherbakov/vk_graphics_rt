@@ -229,7 +229,7 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
 
 void RayTracer_Generated::InitAllGeneratedDescriptorSets_InitLighting()
 {
-  const uint32_t BUFFERS_COUNT = 2;
+  const uint32_t BUFFERS_COUNT = 4;
   std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
   VkAccelerationStructureKHR accelStructs = {};
   VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelInfo = {};
@@ -252,7 +252,9 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_InitLighting()
 
   std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {
     lightingData.initialLighting,
-    voxelsData.voxelsIndices
+    voxelsData.voxelsIndices,
+    genSamplesData.outPointsBuffer,
+    genSamplesData.indirectBuffer
   };
 
   for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)

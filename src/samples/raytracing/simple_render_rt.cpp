@@ -254,7 +254,7 @@ void SimpleRender::TraceGenSamples()
       if (computeState.ff_out + 1 == visibleVoxelsCount && computeState.ff_in + FF_UPDATE_COUNT >= visibleVoxelsCount)
         m_pRayTracerGPU->CorrectFFCmd(commandBuffer, visibleVoxelsCount);
       m_pRayTracerGPU->initLightingCmd(commandBuffer, visibleVoxelsCount, VOXEL_SIZE,
-        to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos));
+        to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos), PER_VOXEL_POINTS);
       m_pRayTracerGPU->reflLightingCmd(commandBuffer, visibleVoxelsCount);
       m_pRayTracerGPU->finalLightingCmd(commandBuffer, visibleVoxelsCount);
 
