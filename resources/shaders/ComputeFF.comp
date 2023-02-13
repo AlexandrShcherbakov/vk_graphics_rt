@@ -44,7 +44,6 @@ layout( push_constant ) uniform kernelArgs
   uint perFacePointsCount;
   uint voxelsCount;
   uint ff_out;
-  uint ff_in;
 } kgenArgs;
 
 shared vec3 arrayToConv[256];
@@ -53,7 +52,7 @@ void main()
 {
   uint tid = uint(gl_LocalInvocationID[0]);
   uint baseVisVoxelId = kgenArgs.ff_out;
-  uint targetVisVoxelId = kgenArgs.ff_in + gl_WorkGroupID.x;
+  uint targetVisVoxelId = gl_WorkGroupID.x;
   uint baseVoxelId = voxelIndices[baseVisVoxelId];
   uint targetVoxelId = voxelIndices[targetVisVoxelId];
   uint pointsPerVoxel = 6 * kgenArgs.perFacePointsCount;

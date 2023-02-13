@@ -250,7 +250,7 @@ void SimpleRender::TraceGenSamples()
       if (computeState.version == 0 && computeState.ff_out == 0 && computeState.ff_in == 0)
         vkCmdFillBuffer(commandBuffer, FFClusteredBuffer, 0, sizeof(float) * clustersCount * clustersCount, 0);
       vkCmdFillBuffer(commandBuffer, appliedLightingBuffer, 0, sizeof(float) * voxelsCount * 6, 0);
-      m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, visibleVoxelsCount, computeState.ff_out, computeState.ff_in, FF_UPDATE_COUNT);
+      m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, visibleVoxelsCount, computeState.ff_out);
       if (computeState.ff_out + 1 == visibleVoxelsCount && computeState.ff_in + FF_UPDATE_COUNT >= visibleVoxelsCount)
         m_pRayTracerGPU->CorrectFFCmd(commandBuffer, visibleVoxelsCount);
       m_pRayTracerGPU->initLightingCmd(commandBuffer, visibleVoxelsCount, VOXEL_SIZE,

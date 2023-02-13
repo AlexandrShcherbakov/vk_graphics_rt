@@ -262,7 +262,7 @@ protected:
     uint32_t ff_in = 0;
     uint32_t version = 0;
   } computeState;
-   const uint32_t FF_UPDATE_COUNT = 2000;
+   const uint32_t FF_UPDATE_COUNT = 200000;
 };
 
 

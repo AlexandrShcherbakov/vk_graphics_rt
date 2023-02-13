@@ -220,7 +220,7 @@ void RayTracer_Generated::GenSamplesCmd(VkCommandBuffer a_commandBuffer, uint32_
 }
 
 void RayTracer_Generated::ComputeFFCmd(VkCommandBuffer a_commandBuffer,
-  uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out, uint32_t ff_in, uint32_t ff_to_update)
+  uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out)
 {
   m_currCmdBuffer = a_commandBuffer;
   VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
@@ -231,19 +231,16 @@ void RayTracer_Generated::ComputeFFCmd(VkCommandBuffer a_commandBuffer,
     uint32_t perFacePointsCount;
     uint32_t voxelsCount;
     uint32_t ff_out;
-    uint32_t ff_in;
   } pcData;
 
   pcData.perFacePointsCount  = points_per_voxel;
   pcData.voxelsCount = voxels_count;
   pcData.ff_out = ff_out;
-  pcData.ff_in = ff_in;
-  ff_to_update = std::min(ff_to_update, voxels_count - ff_in);
 
   vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
   vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputeFFPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, ff_to_update, 1, 1);
+  vkCmdDispatch    (m_currCmdBuffer, voxels_count, 1, 1);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }
 

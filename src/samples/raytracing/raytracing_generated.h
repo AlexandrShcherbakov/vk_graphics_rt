@@ -114,7 +114,7 @@ public:
     LiteMath::float4x4 matrix,
     uint32_t max_points_count);
 
-  virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out, uint32_t ff_in, uint32_t ff_to_update);
+  virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out);
   void initLightingCmd(VkCommandBuffer a_commandBuffer,
     uint32_t voxels_count,
     float voxel_size,
