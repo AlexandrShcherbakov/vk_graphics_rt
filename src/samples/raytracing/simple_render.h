@@ -259,6 +259,7 @@ protected:
   uint32_t maxPointsCount = 0;
   uint32_t visibleVoxelsCount = 0;
   uint32_t visibleVoxelsApproxCount = 0;
+  uint32_t approxColumns = 0;
 
   struct ComputeState
   {

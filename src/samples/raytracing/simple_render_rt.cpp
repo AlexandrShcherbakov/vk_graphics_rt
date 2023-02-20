@@ -249,7 +249,7 @@ void SimpleRender::TraceGenSamples()
 
       vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
       if (computeState.version == 0 && computeState.ff_out == 0 && computeState.ff_in == 0)
-        vkCmdFillBuffer(commandBuffer, FFClusteredBuffer, 0, sizeof(float) * clustersCount * clustersCount, 0);
+        vkCmdFillBuffer(commandBuffer, FFClusteredBuffer, 0, 2 * sizeof(float) * approxColumns * clustersCount, 0);
       if (computeState.ff_out == 0 && computeState.ff_in == 0)
         vkCmdFillBuffer(commandBuffer, ffRowLenBuffer, 0, sizeof(uint32_t) * clustersCount, 0);
       vkCmdFillBuffer(commandBuffer, appliedLightingBuffer, 0, sizeof(float) * voxelsCount * 6, 0);
@@ -278,5 +278,12 @@ void SimpleRender::TraceGenSamples()
   {
     computeState.ff_out = 0;
     computeState.version++;
+  }
+  if (computeState.ff_out == 0 && computeState.ff_in == 0 && computeState.version == 1)
+  {
+    std::vector<uint32_t> rowLens(visibleVoxelsCount * 6 + 1);
+    m_pCopyHelper->ReadBuffer(ffRowLenBuffer, 0, rowLens.data(), sizeof(rowLens[0]) * rowLens.size());
+    std::cout << "FF total count:" << rowLens.back() << std::endl;
+    assert(rowLens.size() <= approxColumns * clustersCount);
   }
 }

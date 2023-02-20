@@ -63,8 +63,8 @@ void SimpleRender::GetRTFeatures()
 
 void SimpleRender::SetupValidationLayers()
 {
-  // m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-  // m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
+  m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+  m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
 void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -417,8 +417,9 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     clustersCount = visibleVoxelsApproxCount * PER_VOXEL_CLUSTERS;
+    approxColumns = visibleVoxelsApproxCount * 0.15f;
     VkMemoryRequirements memReq;
-    FFClusteredBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    FFClusteredBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(float) * approxColumns * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
     setObjectName(FFClusteredBuffer, "FF");
 
     VkMemoryAllocateInfo allocateInfo = {};
