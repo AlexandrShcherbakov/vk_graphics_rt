@@ -4,9 +4,16 @@
 
 #include "unpack_attributes.h"
 
-layout(binding = 0, set = 0) buffer ff_buf { float ff[]; };
+struct FFValue
+{
+  uint idx;
+  float value;
+};
+
+layout(binding = 0, set = 0) buffer ff_buf { FFValue ff[]; };
 layout(binding = 1, set = 0) buffer lighting_buf { float lighting[]; };
 layout(binding = 2, set = 0) buffer target_buf { float bounce[]; };
+layout(binding = 3, set = 0) buffer ff_len_buf { uint ff_row_len[]; };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,11 +37,17 @@ void main()
   if (rowIdx >= patchesCount)
     return;
   arrayToConv[tid] = 0;
-  for (int i = 0; i < (patchesCount + GROUP_SIZE - 1) / GROUP_SIZE; ++i)
+  uint rowOffset = ff_row_len[rowIdx];
+  uint rowSize = ff_row_len[rowIdx + 1] - rowOffset;
+  uint bucketsCount = (patchesCount + GROUP_SIZE - 1) / GROUP_SIZE;
+  for (int i = 0; i < bucketsCount; ++i)
   {
     uint column = i * GROUP_SIZE + tid;
-    if (column < patchesCount)
-      arrayToConv[tid] += ff[rowIdx * patchesCount + column] * lighting[column];
+    if (column < rowSize)
+    {
+      FFValue ffSample = ff[rowOffset + column];
+      arrayToConv[tid] += ffSample.value * lighting[ffSample.idx];
+    }
   }
   barrier();
   for (uint d = GROUP_SIZE >> 1; d > 0; d >>= 1)

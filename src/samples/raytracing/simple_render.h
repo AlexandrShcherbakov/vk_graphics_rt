@@ -247,6 +247,10 @@ protected:
   VkDeviceMemory nonEmptyVoxelsMem = VK_NULL_HANDLE;
   VkBuffer appliedLightingBuffer = VK_NULL_HANDLE;
   VkDeviceMemory appliedLightingMem = VK_NULL_HANDLE;
+  VkBuffer ffRowLenBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory ffRowLenMem = VK_NULL_HANDLE;
+  VkBuffer ffTmpRowBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory ffTmpRowMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
   const float VOXEL_SIZE = 0.125f;
   LiteMath::uint3 voxelsGrid;

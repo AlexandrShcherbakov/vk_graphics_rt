@@ -190,7 +190,7 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + j] = arrayToConv[0][j]
+        ff[(i * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + j] = arrayToConv[0][j]
           * (i < 3 ? positiveAreaInvSum[i] : negativeAreaInvSum[i - 3]);
     }
 
@@ -208,7 +208,7 @@ void main()
     if (tid == 0)
     {
       for (uint j = 0; j < 3; ++j)
-        ff[((baseVisVoxelId * 6 + i) * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + 3 + j] = arrayToConv[0][j]
+        ff[(i * kgenArgs.voxelsCount * 6) + targetVisVoxelId * 6 + 3 + j] = arrayToConv[0][j]
           * (i < 3 ? positiveAreaInvSum[i] : negativeAreaInvSum[i - 3]);
     }
   }

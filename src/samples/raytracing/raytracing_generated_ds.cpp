@@ -29,7 +29,7 @@ void RayTracer_Generated::AllocateAllDescriptorSets()
   
   // allocate all descriptor sets
   //
-  VkDescriptorSetLayout layouts[7] = {};
+  VkDescriptorSetLayout layouts[8] = {};
   layouts[0] = CastSingleRayMegaDSLayout;
   layouts[1] = GenSamplesDSLayout;
   layouts[2] = ComputeFFDSLayout;
@@ -37,6 +37,7 @@ void RayTracer_Generated::AllocateAllDescriptorSets()
   layouts[4] = reflLightingDSLayout;
   layouts[5] = correctFFDSLayout;
   layouts[6] = finalLightingDSLayout;
+  layouts[7] = packFFDSLayout;
 
   VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
   descriptorSetAllocateInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -200,7 +201,7 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
     genSamplesData.indirectBuffer,
     genSamplesData.vertexBuffer,
     genSamplesData.primCounterBuffer,
-    ffData.clusteredBuffer,
+    ffData.ffTmpRowBuffer,
     genSamplesData.debugIndirBuffer,
     genSamplesData.debugBuffer,
     voxelsData.voxelsIndices
@@ -222,6 +223,39 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_ComputeFF()
     writeDescriptorSet[i + 1].pBufferInfo      = &descriptorBufferInfo[i];
     writeDescriptorSet[i + 1].pImageInfo       = nullptr;
     writeDescriptorSet[i + 1].pTexelBufferView = nullptr;
+  }
+
+  vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
+}
+
+void RayTracer_Generated::InitAllGeneratedDescriptorSets_packFF()
+{
+  const uint32_t BUFFERS_COUNT = 3;
+  std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
+  std::array<VkWriteDescriptorSet, BUFFERS_COUNT> writeDescriptorSet;
+
+  std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {
+    ffData.ffTmpRowBuffer,
+    ffData.ffRowsLenBuffer,
+    ffData.clusteredBuffer,
+  };
+
+  for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)
+  {
+    descriptorBufferInfo[i]        = VkDescriptorBufferInfo{};
+    descriptorBufferInfo[i].buffer = buffers[i];
+    descriptorBufferInfo[i].offset = 0;
+    descriptorBufferInfo[i].range  = VK_WHOLE_SIZE;  
+
+    writeDescriptorSet[i]                  = VkWriteDescriptorSet{};
+    writeDescriptorSet[i].sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet[i].dstSet           = m_allGeneratedDS[7];
+    writeDescriptorSet[i].dstBinding       = i;
+    writeDescriptorSet[i].descriptorCount  = 1;
+    writeDescriptorSet[i].descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptorSet[i].pBufferInfo      = &descriptorBufferInfo[i];
+    writeDescriptorSet[i].pImageInfo       = nullptr;
+    writeDescriptorSet[i].pTexelBufferView = nullptr;
   }
 
   vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);
@@ -280,14 +314,15 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_InitLighting()
 
 void RayTracer_Generated::InitAllGeneratedDescriptorSets_ReflLighting()
 {
-  const uint32_t BUFFERS_COUNT = 3;
+  const uint32_t BUFFERS_COUNT = 4;
   std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
   std::array<VkWriteDescriptorSet, BUFFERS_COUNT> writeDescriptorSet;
 
   std::array<VkBuffer, descriptorBufferInfo.size()> buffers = {
     ffData.clusteredBuffer,
     lightingData.initialLighting,
-    lightingData.reflLighting
+    lightingData.reflLighting,
+    ffData.ffRowsLenBuffer,
   };
 
   for (uint32_t i = 0; i < descriptorBufferInfo.size(); ++i)

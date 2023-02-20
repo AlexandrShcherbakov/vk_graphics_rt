@@ -244,6 +244,35 @@ void RayTracer_Generated::ComputeFFCmd(VkCommandBuffer a_commandBuffer,
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
 }
 
+void RayTracer_Generated::packFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out)
+{
+  m_currCmdBuffer = a_commandBuffer;
+  VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
+  uint32_t blockSizeX = 256;
+
+  struct KernelArgsPC
+  {
+    uint32_t clustersCount;
+    uint32_t rowIdx;
+    uint32_t rowGlobalIdx;
+  } pcData;
+
+  pcData.clustersCount  = voxels_count * 6;
+
+  vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, packFFLayout, 0, 1, &m_allGeneratedDS[7], 0, nullptr);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, packFFPipeline);
+  for (uint32_t i = 0; i < 6; ++i)
+  {
+    pcData.rowIdx = i;
+    pcData.rowGlobalIdx = ff_out * 6 + i;
+    vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+    vkCmdDispatch (m_currCmdBuffer, voxels_count * 6, 1, 1);
+    VkBufferCopy region = {sizeof(uint32_t) * (ff_out * 6 + i + 1), sizeof(uint32_t) * (ff_out * 6 + i + 2), sizeof(uint32_t)};
+    vkCmdCopyBuffer(m_currCmdBuffer, ffData.ffRowsLenBuffer, ffData.ffRowsLenBuffer, 1, &region);
+  }
+  vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr); 
+}
+
 void RayTracer_Generated::initLightingCmd(VkCommandBuffer a_commandBuffer,
   uint32_t voxels_count,
   float voxel_size,

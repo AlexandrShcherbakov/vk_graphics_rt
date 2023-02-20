@@ -552,6 +552,41 @@ void SimpleRender::CreateUniformBuffer()
 
     VK_CHECK_RESULT(vkBindBufferMemory(m_device, appliedLightingBuffer, appliedLightingMem, 0));
   }
+
+  {
+    VkMemoryRequirements memReq;
+    ffRowLenBuffer = vk_utils::createBuffer(m_device, sizeof(uint32_t) * (clustersCount + 1),
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &memReq);
+    setObjectName(ffRowLenBuffer, "ff_row_lengths");
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &ffRowLenMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, ffRowLenBuffer, ffRowLenMem, 0));
+  }
+
+  {
+    VkMemoryRequirements memReq;
+    ffTmpRowBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount * 6, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    setObjectName(ffTmpRowBuffer, "ff_tmp_row");
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.allocationSize = memReq.size;
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
+                                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                            m_physicalDevice);
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &ffTmpRowMem));
+
+    VK_CHECK_RESULT(vkBindBufferMemory(m_device, ffTmpRowBuffer, ffTmpRowMem, 0));
+  }
 }
 
 void SimpleRender::UpdateUniformBuffer(float a_time)

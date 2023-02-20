@@ -1,0 +1,40 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "unpack_attributes.h"
+
+struct FFValue
+{
+  uint idx;
+  float value;
+};
+
+layout(binding = 0, set = 0) buffer tmp_ff_rows { float tmp_rows[]; };
+layout(binding = 1, set = 0) buffer counters { uint ff_row_lens[]; };
+layout(binding = 2, set = 0) buffer ff_matrix { FFValue ff[]; };
+
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  uint clustersCount;
+  uint rowIdx;
+  uint rowGlobalIdx;
+} kgenArgs;
+
+void main()
+{
+  uint tid = uint(gl_GlobalInvocationID.x);
+  if (tid >= kgenArgs.clustersCount)
+    return;
+  float value = tmp_rows[kgenArgs.rowIdx * kgenArgs.clustersCount + tid];
+  if (value > 1e-6f)
+  {
+    uint globalOffset = atomicAdd(ff_row_lens[kgenArgs.rowGlobalIdx + 1], 1);
+    uint offset = globalOffset - ff_row_lens[kgenArgs.rowGlobalIdx];
+    ff[globalOffset].idx = tid;
+    ff[globalOffset].value = value;
+  }
+}
+

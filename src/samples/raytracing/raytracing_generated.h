@@ -51,7 +51,9 @@ public:
     VkBuffer debug_indir_buffer,
     VkBuffer voxel_indices,
     VkBuffer voxel_indices_indir,
-    VkBuffer final_lighting_buffer)
+    VkBuffer final_lighting_buffer,
+    VkBuffer ff_rows_len_buffer,
+    VkBuffer ff_tmp_row_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -64,6 +66,8 @@ public:
     genSamplesData.debugBuffer = debug_buffer;
     genSamplesData.debugIndirBuffer = debug_indir_buffer;
     ffData.clusteredBuffer = ff_clustered_buffer;
+    ffData.ffRowsLenBuffer = ff_rows_len_buffer;
+    ffData.ffTmpRowBuffer = ff_tmp_row_buffer;
     lightingData.initialLighting = init_lighting_buffer;
     lightingData.reflLighting = refl_buffer;
     lightingData.finalLighting = final_lighting_buffer;
@@ -71,6 +75,7 @@ public:
     voxelsData.voxelsIndicesIndir = voxel_indices_indir;
     InitAllGeneratedDescriptorSets_GenSamples();
     InitAllGeneratedDescriptorSets_ComputeFF();
+    InitAllGeneratedDescriptorSets_packFF();
     InitAllGeneratedDescriptorSets_InitLighting();
     InitAllGeneratedDescriptorSets_ReflLighting();
     InitAllGeneratedDescriptorSets_CorrectFF();
@@ -115,6 +120,7 @@ public:
     uint32_t max_points_count);
 
   virtual void ComputeFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out);
+  virtual void packFFCmd(VkCommandBuffer a_commandBuffer, uint32_t points_per_voxel, uint32_t voxels_count, uint32_t ff_out);
   void initLightingCmd(VkCommandBuffer a_commandBuffer,
     uint32_t voxels_count,
     float voxel_size,
@@ -164,6 +170,7 @@ protected:
   virtual void InitAllGeneratedDescriptorSets_CastSingleRay();
   virtual void InitAllGeneratedDescriptorSets_GenSamples();
   virtual void InitAllGeneratedDescriptorSets_ComputeFF();
+  virtual void InitAllGeneratedDescriptorSets_packFF();
   virtual void InitAllGeneratedDescriptorSets_InitLighting();
   virtual void InitAllGeneratedDescriptorSets_ReflLighting();
   virtual void InitAllGeneratedDescriptorSets_CorrectFF();
@@ -212,6 +219,8 @@ protected:
   struct FFData
   {
     VkBuffer clusteredBuffer = VK_NULL_HANDLE;
+    VkBuffer ffRowsLenBuffer = VK_NULL_HANDLE;
+    VkBuffer ffTmpRowBuffer = VK_NULL_HANDLE;
   } ffData;
 
   struct LightingData
@@ -234,6 +243,7 @@ protected:
   VkDescriptorSetLayout CreateCastSingleRayMegaDSLayout();
   VkDescriptorSetLayout GenSampleDSLayout();
   VkDescriptorSetLayout CreateComputeFFDSLayout();
+  VkDescriptorSetLayout CreatePackFFDSLayout();
   VkDescriptorSetLayout CreateInitLightingDSLayout();
   VkDescriptorSetLayout CreateReflLightingDSLayout();
   VkDescriptorSetLayout CreateCorrectFFDSLayout();
@@ -264,6 +274,10 @@ protected:
   VkPipeline            finalLightingPipeline  = VK_NULL_HANDLE;
   VkDescriptorSetLayout finalLightingDSLayout  = VK_NULL_HANDLE;
 
+  VkPipelineLayout      packFFLayout    = VK_NULL_HANDLE;
+  VkPipeline            packFFPipeline  = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout packFFDSLayout  = VK_NULL_HANDLE;
+
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
 
   VkPipelineLayout      copyKernelFloatLayout   = VK_NULL_HANDLE;
@@ -272,7 +286,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  std::array<VkDescriptorSet, 7>  m_allGeneratedDS;
+  std::array<VkDescriptorSet, 8>  m_allGeneratedDS;
 
   RayTracer_UBO_Data m_uboData;
   
