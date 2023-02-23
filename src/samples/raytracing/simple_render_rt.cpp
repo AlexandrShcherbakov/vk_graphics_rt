@@ -285,5 +285,74 @@ void SimpleRender::TraceGenSamples()
     m_pCopyHelper->ReadBuffer(ffRowLenBuffer, 0, rowLens.data(), sizeof(rowLens[0]) * rowLens.size());
     std::cout << "FF total count:" << rowLens.back() << std::endl;
     assert(rowLens.size() <= approxColumns * clustersCount);
+    std::vector<FFValue> ff(approxColumns * clustersCount);
+    m_pCopyHelper->ReadBuffer(FFClusteredBuffer, 0, ff.data(), sizeof(ff[0]) * ff.size());
+    buildAliasTable(ff, rowLens);
+  }
+}
+
+void SimpleRender::buildAliasTable(const std::vector<FFValue> &ff, const std::vector<uint32_t> &row_lengths)
+{
+  aliasThresholds.clear();
+  aliasIndices.clear();
+  aliasRowLengths.clear();
+  aliasRowLengths.push_back(0);
+
+  for (uint32_t i = 1; i < row_lengths.size(); ++i)
+  {
+    const uint32_t rowBegin = row_lengths[i - 1];
+    const uint32_t rowEnd = row_lengths[i];
+    struct AliasInst
+    {
+      float threshold;
+      uint2 indices;
+    };
+    std::vector<AliasInst> aliasRow;
+    float sum = 0;
+    for (uint32_t j = rowBegin; j < rowEnd; ++j)
+    {
+      aliasRow.emplace_back(AliasInst{ff[j].value, {ff[j].idx, 0}});
+      sum += ff[j].value;
+    }
+    if (sum > 1)
+    {
+      for (uint32_t j = 0; j < rowEnd - rowBegin; ++j)
+      {
+        aliasRow[j].threshold /= sum;
+      }
+    } else if (sum < 1)
+    {
+      aliasRow.emplace_back(AliasInst{1 - sum, {0xFFFFFFFF, 0}});
+    }
+    for (uint32_t j = 0; j < aliasRow.size(); ++j)
+    {
+      aliasRow[j].threshold *= aliasRow.size();
+    }
+    const auto comparator = [](const AliasInst &a, const AliasInst &b) {return a.threshold < b.threshold;};
+    std::sort(aliasRow.begin(), aliasRow.end(), comparator);
+    for (uint32_t j = 0; j < aliasRow.size() - 1; ++j)
+    {
+      assert(aliasRow.back().threshold >= 1 - aliasRow[j].threshold);
+      aliasRow.back().threshold -= 1 - aliasRow[j].threshold;
+      aliasRow[j].indices.y = aliasRow.back().indices.x;
+      if (j < aliasRow.size() - 2 && aliasRow.back().threshold < aliasRow[aliasRow.size() - 2].threshold)
+      {
+        auto it = std::lower_bound(aliasRow.begin() + j + 1, aliasRow.begin() + aliasRow.size() - 1, aliasRow.back(), comparator);
+        const auto value = aliasRow.back();
+        aliasRow.pop_back();
+        aliasRow.insert(it, value);
+        assert(aliasRow.back().threshold >= aliasRow[aliasRow.size() - 2].threshold);
+      }
+    }
+    for (int j = aliasRow.size() - 1; j >= 0 && aliasRow[j].threshold > 1; --j)
+    {
+      aliasRow[j].threshold = 1;
+    }
+    aliasRowLengths.push_back(aliasRow.size());
+    for (uint32_t j = 0; j < aliasRow.size(); ++j)
+    {
+      aliasThresholds.push_back(aliasRow[j].threshold);
+      aliasIndices.push_back(aliasRow[j].indices);
+    }
   }
 }
