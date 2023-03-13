@@ -14,6 +14,7 @@ if __name__ == '__main__':
         "ComputeFF.comp",
         "initLighting.comp",
         "oneBounce.comp",
+        "aliasBounce.comp",
         "CorrectFF.comp",
         "debug_lines.vert",
         "debug_lines.frag",

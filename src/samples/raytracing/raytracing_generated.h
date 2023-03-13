@@ -78,6 +78,7 @@ public:
     InitAllGeneratedDescriptorSets_packFF();
     InitAllGeneratedDescriptorSets_InitLighting();
     InitAllGeneratedDescriptorSets_ReflLighting();
+    InitAllGeneratedDescriptorSets_AliasLighting();
     InitAllGeneratedDescriptorSets_CorrectFF();
     InitAllGeneratedDescriptorSets_FinalLighting();
   }
@@ -130,6 +131,7 @@ public:
     uint32_t per_voxels_points_count);
 
   void reflLightingCmd(VkCommandBuffer a_commandBuffer, uint32_t voxels_count);
+  void aliasLightingCmd(VkCommandBuffer a_commandBuffer, uint32_t voxels_count);
   void CorrectFFCmd(VkCommandBuffer a_commandBuffer, uint32_t voxels_count);
   void finalLightingCmd(VkCommandBuffer a_commandBuffer, uint32_t visible_voxels_count);
   
@@ -173,6 +175,7 @@ protected:
   virtual void InitAllGeneratedDescriptorSets_packFF();
   virtual void InitAllGeneratedDescriptorSets_InitLighting();
   virtual void InitAllGeneratedDescriptorSets_ReflLighting();
+  virtual void InitAllGeneratedDescriptorSets_AliasLighting();
   virtual void InitAllGeneratedDescriptorSets_CorrectFF();
   virtual void InitAllGeneratedDescriptorSets_FinalLighting();
 
@@ -246,6 +249,7 @@ protected:
   VkDescriptorSetLayout CreatePackFFDSLayout();
   VkDescriptorSetLayout CreateInitLightingDSLayout();
   VkDescriptorSetLayout CreateReflLightingDSLayout();
+  VkDescriptorSetLayout CreateAliasLightingDSLayout();
   VkDescriptorSetLayout CreateCorrectFFDSLayout();
   VkDescriptorSetLayout CreateFinalLightingDSLayout();
   void InitKernel_CastSingleRayMega(const char* a_filePath);
@@ -265,6 +269,10 @@ protected:
   VkPipelineLayout      reflLightingLayout    = VK_NULL_HANDLE;
   VkPipeline            reflLightingPipeline  = VK_NULL_HANDLE;
   VkDescriptorSetLayout reflLightingDSLayout  = VK_NULL_HANDLE;
+  
+  VkPipelineLayout      aliasLightingLayout    = VK_NULL_HANDLE;
+  VkPipeline            aliasLightingPipeline  = VK_NULL_HANDLE;
+  VkDescriptorSetLayout aliasLightingDSLayout  = VK_NULL_HANDLE;
 
   VkPipelineLayout      correctFFLayout    = VK_NULL_HANDLE;
   VkPipeline            correctFFPipeline  = VK_NULL_HANDLE;
@@ -286,7 +294,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  std::array<VkDescriptorSet, 8>  m_allGeneratedDS;
+  std::array<VkDescriptorSet, 9>  m_allGeneratedDS;
 
   RayTracer_UBO_Data m_uboData;
   

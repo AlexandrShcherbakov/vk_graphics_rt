@@ -269,7 +269,7 @@ protected:
   } computeState;
   const uint32_t FF_UPDATE_COUNT = 200000;
   std::vector<float> aliasThresholds;
-  std::vector<LiteMath::uint2> aliasIndices;
+  std::vector<uint> aliasIndices;
   std::vector<uint> aliasRowLengths;
 
   struct FFValue
@@ -279,6 +279,7 @@ protected:
   };
 
   void buildAliasTable(const std::vector<FFValue> &ff, const std::vector<uint32_t> &row_lengths);
+  bool useAlias = false;
 };
 
 

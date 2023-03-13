@@ -240,6 +240,7 @@ void SimpleRender::TraceGenSamples()
       std::cout << "Visible voxels count " << visibleVoxelsCount << std::endl;
       assert(visibleVoxelsApproxCount >= visibleVoxelsCount);
     }
+    if (!useAlias)
     {
       VkCommandBuffer commandBuffer = vk_utils::createCommandBuffer(m_device, m_commandPool);
 
@@ -266,6 +267,25 @@ void SimpleRender::TraceGenSamples()
 
       vk_utils::executeCommandBufferNow(commandBuffer, m_graphicsQueue, m_device);
     }
+    else
+    {
+      VkCommandBuffer commandBuffer = vk_utils::createCommandBuffer(m_device, m_commandPool);
+
+      VkCommandBufferBeginInfo beginCommandBufferInfo = {};
+      beginCommandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      beginCommandBufferInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+      vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
+      vkCmdFillBuffer(commandBuffer, appliedLightingBuffer, 0, sizeof(float) * voxelsCount * 6, 0);
+      m_pRayTracerGPU->initLightingCmd(commandBuffer, visibleVoxelsCount, VOXEL_SIZE,
+        to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos), PER_VOXEL_POINTS);
+      m_pRayTracerGPU->aliasLightingCmd(commandBuffer, visibleVoxelsCount);
+      m_pRayTracerGPU->finalLightingCmd(commandBuffer, visibleVoxelsCount);
+
+      vkEndCommandBuffer(commandBuffer);
+
+      vk_utils::executeCommandBufferNow(commandBuffer, m_graphicsQueue, m_device);
+    }
     inited = true;
   }
   computeState.ff_in += FF_UPDATE_COUNT;
@@ -284,10 +304,22 @@ void SimpleRender::TraceGenSamples()
     std::vector<uint32_t> rowLens(visibleVoxelsCount * 6 + 1);
     m_pCopyHelper->ReadBuffer(ffRowLenBuffer, 0, rowLens.data(), sizeof(rowLens[0]) * rowLens.size());
     std::cout << "FF total count:" << rowLens.back() << std::endl;
-    assert(rowLens.size() <= approxColumns * clustersCount);
+    // assert(rowLens.size() <= approxColumns * clustersCount);
+    assert(rowLens.back() <= approxColumns * clustersCount);
     std::vector<FFValue> ff(approxColumns * clustersCount);
     m_pCopyHelper->ReadBuffer(FFClusteredBuffer, 0, ff.data(), sizeof(ff[0]) * ff.size());
     buildAliasTable(ff, rowLens);
+    std::vector<FFValue> aliasValues(aliasIndices.size());
+    assert(aliasThresholds.size() == aliasIndices.size());
+    assert(aliasThresholds.size() <= approxColumns * clustersCount);
+    for (uint32_t i = 0; i < aliasThresholds.size(); ++i)
+    {
+      aliasValues[i].idx = aliasIndices[i];
+      aliasValues[i].value = aliasThresholds[i];
+    }
+    m_pCopyHelper->UpdateBuffer(FFClusteredBuffer, 0, aliasValues.data(), aliasValues.size() * sizeof(aliasValues[0]));
+    m_pCopyHelper->UpdateBuffer(ffRowLenBuffer, 0, aliasRowLengths.data(), aliasRowLengths.size() * sizeof(aliasRowLengths[0]));
+    useAlias = true;
   }
 }
 
@@ -311,26 +343,34 @@ void SimpleRender::buildAliasTable(const std::vector<FFValue> &ff, const std::ve
     float sum = 0;
     for (uint32_t j = rowBegin; j < rowEnd; ++j)
     {
+      if (ff[j].value < 1e-5)
+        continue;
       aliasRow.emplace_back(AliasInst{ff[j].value, {ff[j].idx, 0}});
       sum += ff[j].value;
     }
     if (sum > 1)
     {
-      for (uint32_t j = 0; j < rowEnd - rowBegin; ++j)
+      for (uint32_t j = 0; j < aliasRow.size(); ++j)
       {
         aliasRow[j].threshold /= sum;
       }
     } else if (sum < 1)
     {
-      aliasRow.emplace_back(AliasInst{1 - sum, {0xFFFFFFFF, 0}});
+      aliasRow.emplace_back(AliasInst{1 - sum, {0xFFFF, 0}});
+    }
+    const auto comparator = [](const AliasInst &a, const AliasInst &b) {return a.threshold < b.threshold;};
+    std::sort(aliasRow.begin(), aliasRow.end(), comparator);
+    std::vector<AliasInst> stableValues;
+    for (uint32_t i = 0; i < 4 && !aliasRow.empty(); ++i)
+    {
+      stableValues.push_back(aliasRow.back());
+      aliasRow.pop_back();
     }
     for (uint32_t j = 0; j < aliasRow.size(); ++j)
     {
       aliasRow[j].threshold *= aliasRow.size();
     }
-    const auto comparator = [](const AliasInst &a, const AliasInst &b) {return a.threshold < b.threshold;};
-    std::sort(aliasRow.begin(), aliasRow.end(), comparator);
-    for (uint32_t j = 0; j < aliasRow.size() - 1; ++j)
+    for (uint32_t j = 0; j + 1 < aliasRow.size(); ++j)
     {
       assert(aliasRow.back().threshold >= 1 - aliasRow[j].threshold);
       aliasRow.back().threshold -= 1 - aliasRow[j].threshold;
@@ -348,11 +388,17 @@ void SimpleRender::buildAliasTable(const std::vector<FFValue> &ff, const std::ve
     {
       aliasRow[j].threshold = 1;
     }
-    aliasRowLengths.push_back(aliasRow.size());
+    aliasRowLengths.push_back(aliasRow.size() + aliasRowLengths.back() + stableValues.size());
+    for (uint32_t j = 0; j < stableValues.size(); ++j)
+    {
+      aliasThresholds.push_back(stableValues[j].threshold);
+      aliasIndices.push_back(stableValues[j].indices.x);
+    }
     for (uint32_t j = 0; j < aliasRow.size(); ++j)
     {
       aliasThresholds.push_back(aliasRow[j].threshold);
-      aliasIndices.push_back(aliasRow[j].indices);
+      assert(aliasRow[j].indices.y <= 0xFFFF && aliasRow[j].indices.x <= 0xFFFF);
+      aliasIndices.push_back((((unsigned short)aliasRow[j].indices.y) << 16) | ((unsigned short)aliasRow[j].indices.x));
     }
   }
 }

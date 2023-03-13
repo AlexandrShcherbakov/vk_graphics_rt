@@ -63,8 +63,8 @@ void SimpleRender::GetRTFeatures()
 
 void SimpleRender::SetupValidationLayers()
 {
-  m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-  m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
+  // m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+  // m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
 void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -332,7 +332,7 @@ void SimpleRender::CreateUniformBuffer()
   voxelsCount = voxelsGrid.x * voxelsGrid.y * voxelsGrid.z;
   maxPointsCount = voxelsCount * 6 * PER_SURFACE_POINTS;
   std::cout << "Voxels count " << voxelsCount << std::endl;
-  visibleVoxelsApproxCount = voxelsCount * 0.27f;
+  visibleVoxelsApproxCount = voxelsCount * 0.275f;
   std::cout << "Approximate visible voxels count " << visibleVoxelsApproxCount << std::endl;
 
   {
@@ -418,7 +418,7 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     clustersCount = visibleVoxelsApproxCount * PER_VOXEL_CLUSTERS;
-    approxColumns = visibleVoxelsApproxCount * 0.15f;
+    approxColumns = visibleVoxelsApproxCount * 0.16f;
     VkMemoryRequirements memReq;
     FFClusteredBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(float) * approxColumns * clustersCount,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &memReq);
