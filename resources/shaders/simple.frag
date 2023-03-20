@@ -18,7 +18,7 @@ layout(binding = 0, set = 0) uniform AppData
 {
     UniformParams Params;
 };
-layout(binding = 1, set = 0) buffer lighting_buf { float lighting[]; };
+layout(binding = 1, set = 0) buffer lighting_buf { vec4 lighting[]; };
 layout(binding = 2, set = 0) buffer points_buf { uint points_cnt[]; };
 
 
@@ -46,19 +46,19 @@ void main()
 
     out_fragColor = color_lights * Params.baseColor;
     vec3 UVW = (coords - voxelCoord) - 0.5;
-    float light[8];
+    vec3 light[8];
     float weightSum = 0;
     for (int i = 0; i < 2; ++i)
         for (int j = 0; j < 2; ++j)
             for (int k = 0; k < 2; ++k)
             {
-                float voxLight = 0;
+                vec3 voxLight = vec3(0);
                 ivec3 voxelId = ivec3(voxelCoord) + ivec3(i, j, k) * ivec3(sign(UVW));
                 uint voxelIdx = (voxelId.x * voxelsExtend.y + voxelId.y) * voxelsExtend.z + voxelId.z;
                 for (int z = 0; z < 3; ++z)
                 {
-                    voxLight += lighting[voxelIdx * 6 + z] * max(0, N[z]);
-                    voxLight += lighting[voxelIdx * 6 + 3 + z] * max(0, -N[z]);
+                    voxLight += lighting[voxelIdx * 6 + z].rgb * max(0, N[z]);
+                    voxLight += lighting[voxelIdx * 6 + 3 + z].rgb * max(0, -N[z]);
                 }
                 float weight = 0;
                 if (points_cnt[4 * voxelIdx] > 0)
@@ -74,7 +74,7 @@ void main()
     for (int i = 1; i < 8; ++i)
         light[0] += light[i];
     //138
-    out_fragColor = vec4(light[0] / weightSum);
+    out_fragColor = vec4(light[0] / weightSum, 1);
     // if (voxelIdx == 56)
     // {
     //     out_fragColor = vec4(1, 0, 0, 1);

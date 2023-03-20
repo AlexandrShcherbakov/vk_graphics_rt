@@ -149,7 +149,7 @@ VkDescriptorSetLayout RayTracer_Generated::CreateCastSingleRayMegaDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
 {
-  const uint32_t BUFFERS_COUNT = 10;
+  const uint32_t BUFFERS_COUNT = 12;
   std::array<VkDescriptorSetLayoutBinding, 1 + BUFFERS_COUNT> dsBindings;
 
   // binding for m_pAccelStruct

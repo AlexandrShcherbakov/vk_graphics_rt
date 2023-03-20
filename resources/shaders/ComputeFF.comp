@@ -10,6 +10,7 @@ struct SamplePoint
 {
   vec4 position;
   vec4 normal;
+  vec4 color;
 };
 
 layout(binding = 1, set = 0) buffer point_buf { SamplePoint points[]; };

@@ -117,7 +117,7 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_CastSingleRay()
 
 void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
 {
-  const uint32_t BUFFERS_COUNT = 10;
+  const uint32_t BUFFERS_COUNT = 12;
   std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
   VkAccelerationStructureKHR accelStructs = {};
   VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelInfo = {};
@@ -149,7 +149,9 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
     genSamplesData.instInfoBuffer,
     genSamplesData.primCounterBuffer,
     voxelsData.voxelsIndices,
-    voxelsData.voxelsIndicesIndir
+    voxelsData.voxelsIndicesIndir,
+    genSamplesData.materialsBuffer,
+    genSamplesData.materialIdsBuffer,
   };
 
   for (uint32_t i = 0; i < BUFFERS_COUNT; ++i)

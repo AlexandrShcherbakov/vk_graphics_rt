@@ -4,8 +4,8 @@
 
 #include "unpack_attributes.h"
 
-layout(binding = 0, set = 0) buffer reflBuf { float refl[]; };
-layout(binding = 1, set = 0) buffer finalBuf { float final[]; };
+layout(binding = 0, set = 0) buffer reflBuf { vec4 refl[]; };
+layout(binding = 1, set = 0) buffer finalBuf { vec4 final[]; };
 layout(binding = 2, set = 0) buffer voxelIndicesBuf { uint voxelIndices[]; };
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;

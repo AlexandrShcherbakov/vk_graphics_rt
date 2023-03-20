@@ -11,8 +11,8 @@ struct FFValue
 };
 
 layout(binding = 0, set = 0) buffer ff_buf { FFValue ff[]; };
-layout(binding = 1, set = 0) buffer lighting_buf { float lighting[]; };
-layout(binding = 2, set = 0) buffer target_buf { float bounce[]; };
+layout(binding = 1, set = 0) buffer lighting_buf { vec4 lighting[]; };
+layout(binding = 2, set = 0) buffer target_buf { vec4 bounce[]; };
 layout(binding = 3, set = 0) buffer ff_len_buf { uint ff_row_len[]; };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ void main()
   uint SAMPLES_COUNT = 10;
   uint start = kgenArgs.randValue % rowSize;
   uint seed = start;
-  float lightingSampled = 0;
+  vec4 lightingSampled = vec4(0);
   for (uint i = start; i < (start + SAMPLES_COUNT); ++i)
   {
     seed = (8253729 * seed + 2396403);

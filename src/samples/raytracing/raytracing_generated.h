@@ -53,7 +53,9 @@ public:
     VkBuffer voxel_indices_indir,
     VkBuffer final_lighting_buffer,
     VkBuffer ff_rows_len_buffer,
-    VkBuffer ff_tmp_row_buffer)
+    VkBuffer ff_tmp_row_buffer,
+    VkBuffer materials_buffer,
+    VkBuffer material_ids_buffer)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -65,6 +67,8 @@ public:
     genSamplesData.primCounterBuffer = prim_counter_buffer;
     genSamplesData.debugBuffer = debug_buffer;
     genSamplesData.debugIndirBuffer = debug_indir_buffer;
+    genSamplesData.materialsBuffer = materials_buffer;
+    genSamplesData.materialIdsBuffer = material_ids_buffer;
     ffData.clusteredBuffer = ff_clustered_buffer;
     ffData.ffRowsLenBuffer = ff_rows_len_buffer;
     ffData.ffTmpRowBuffer = ff_tmp_row_buffer;
@@ -211,6 +215,8 @@ protected:
     VkBuffer primCounterBuffer = VK_NULL_HANDLE;
     VkBuffer debugBuffer = VK_NULL_HANDLE;
     VkBuffer debugIndirBuffer = VK_NULL_HANDLE;
+    VkBuffer materialsBuffer = VK_NULL_HANDLE;
+    VkBuffer materialIdsBuffer = VK_NULL_HANDLE;
   } genSamplesData;
 
   struct Voxels

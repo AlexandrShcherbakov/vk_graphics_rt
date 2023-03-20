@@ -63,8 +63,8 @@ void SimpleRender::GetRTFeatures()
 
 void SimpleRender::SetupValidationLayers()
 {
-  // m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-  // m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
+  m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+  m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
 void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -104,7 +104,7 @@ void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_inst
 
   LoaderConfig conf = {};
   conf.load_geometry = true;
-  conf.load_materials = MATERIAL_LOAD_MODE::NONE;
+  conf.load_materials = MATERIAL_LOAD_MODE::MATERIALS_ONLY;
   conf.build_acc_structs = true;
   conf.build_acc_structs_while_loading_scene = true;
   conf.builder_type = BVH_BUILDER_TYPE::RTX;
@@ -379,7 +379,7 @@ void SimpleRender::CreateUniformBuffer()
   }
   {
     VkMemoryRequirements memReq;
-    samplePointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * 2 * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    samplePointsBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * 3 * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
     setObjectName(samplePointsBuffer, "samples");
 
     VkMemoryAllocateInfo allocateInfo = {};
@@ -438,7 +438,7 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     VkMemoryRequirements memReq;
-    initLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    initLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
     setObjectName(initLightingBuffer, "initial_lighting");
 
     VkMemoryAllocateInfo allocateInfo = {};
@@ -455,7 +455,7 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     VkMemoryRequirements memReq;
-    reflLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    reflLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * clustersCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
     setObjectName(reflLightingBuffer, "reflected_lighting");
 
     VkMemoryAllocateInfo allocateInfo = {};
@@ -541,7 +541,7 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     VkMemoryRequirements memReq;
-    appliedLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float) * voxelsCount * 6, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
+    appliedLightingBuffer = vk_utils::createBuffer(m_device, sizeof(float4) * voxelsCount * 6, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT, &memReq);
     setObjectName(appliedLightingBuffer, "final_lighting");
 
     VkMemoryAllocateInfo allocateInfo = {};

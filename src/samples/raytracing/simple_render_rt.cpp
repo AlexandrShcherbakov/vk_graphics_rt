@@ -200,7 +200,8 @@ void SimpleRender::TraceGenSamples()
       m_pScnMgr->GetInstanceMatBuffer(), m_pScnMgr->GetMeshInfoBuffer(),
       primCounterBuffer, FFClusteredBuffer, initLightingBuffer, reflLightingBuffer,
       debugBuffer, debugIndirBuffer, nonEmptyVoxelsBuffer, indirVoxelsBuffer,
-      appliedLightingBuffer, ffRowLenBuffer, ffTmpRowBuffer);
+      appliedLightingBuffer, ffRowLenBuffer, ffTmpRowBuffer,
+      m_pScnMgr->GetMaterialsBuffer(), m_pScnMgr->GetMaterialIDsBuffer());
     m_pRayTracerGPU->UpdateAll(m_pCopyHelper);
   }
 
@@ -360,12 +361,6 @@ void SimpleRender::buildAliasTable(const std::vector<FFValue> &ff, const std::ve
     }
     const auto comparator = [](const AliasInst &a, const AliasInst &b) {return a.threshold < b.threshold;};
     std::sort(aliasRow.begin(), aliasRow.end(), comparator);
-    std::vector<AliasInst> stableValues;
-    for (uint32_t i = 0; i < 4 && !aliasRow.empty(); ++i)
-    {
-      stableValues.push_back(aliasRow.back());
-      aliasRow.pop_back();
-    }
     for (uint32_t j = 0; j < aliasRow.size(); ++j)
     {
       aliasRow[j].threshold *= aliasRow.size();
@@ -388,12 +383,7 @@ void SimpleRender::buildAliasTable(const std::vector<FFValue> &ff, const std::ve
     {
       aliasRow[j].threshold = 1;
     }
-    aliasRowLengths.push_back(aliasRow.size() + aliasRowLengths.back() + stableValues.size());
-    for (uint32_t j = 0; j < stableValues.size(); ++j)
-    {
-      aliasThresholds.push_back(stableValues[j].threshold);
-      aliasIndices.push_back(stableValues[j].indices.x);
-    }
+    aliasRowLengths.push_back(aliasRow.size() + aliasRowLengths.back());
     for (uint32_t j = 0; j < aliasRow.size(); ++j)
     {
       aliasThresholds.push_back(aliasRow[j].threshold);
