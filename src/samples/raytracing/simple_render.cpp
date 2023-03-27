@@ -104,7 +104,7 @@ void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_inst
 
   LoaderConfig conf = {};
   conf.load_geometry = true;
-  conf.load_materials = MATERIAL_LOAD_MODE::MATERIALS_ONLY;
+  conf.load_materials = MATERIAL_LOAD_MODE::MATERIALS_AND_TEXTURES;
   conf.build_acc_structs = true;
   conf.build_acc_structs_while_loading_scene = true;
   conf.builder_type = BVH_BUILDER_TYPE::RTX;
@@ -183,6 +183,7 @@ void SimpleRender::SetupSimplePipeline()
   m_pBindings->BindBuffer(3, m_pScnMgr->GetMaterialsBuffer(), VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindBuffer(4, m_pScnMgr->GetMaterialPerVertexIDsBuffer(), VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindAccelStruct(5, m_pScnMgr->GetTLAS(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+  m_pBindings->BindImageArray(6, m_pScnMgr->GetTextureViews(), m_pScnMgr->GetTextureSamplers());
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   // if we are recreating pipeline (for example, to reload shaders)
@@ -335,7 +336,7 @@ void SimpleRender::CreateUniformBuffer()
   voxelsCount = voxelsGrid.x * voxelsGrid.y * voxelsGrid.z;
   maxPointsCount = voxelsCount * 6 * PER_SURFACE_POINTS;
   std::cout << "Voxels count " << voxelsCount << std::endl;
-  visibleVoxelsApproxCount = voxelsCount * 0.3;//0.275f;
+  visibleVoxelsApproxCount = voxelsCount * 0.6;//0.275f;
   std::cout << "Approximate visible voxels count " << visibleVoxelsApproxCount << std::endl;
 
   {
@@ -655,10 +656,10 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       auto inst = m_pScnMgr->GetInstanceInfo(i);
 
       pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
+      auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
       vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0,
                          sizeof(pushConst2M), &pushConst2M);
 
-      auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
 

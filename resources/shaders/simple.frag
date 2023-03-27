@@ -2,6 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_ray_query : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 #include "common.h"
 
@@ -14,6 +15,7 @@ layout (location = 0 ) in VS_OUT
     vec3 wTangent;
     vec2 texCoord;
     vec3 color;
+    flat uint materialId;
 } surf;
 
 layout(binding = 0, set = 0) uniform AppData
@@ -22,7 +24,9 @@ layout(binding = 0, set = 0) uniform AppData
 };
 layout(binding = 1, set = 0) buffer lighting_buf { vec4 lighting[]; };
 layout(binding = 2, set = 0) buffer points_buf { uint points_cnt[]; };
+layout(binding = 3, set = 0) buffer materialsBuf { MaterialData_pbrMR materials[]; };
 layout(binding = 5, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
+layout(binding = 6, set = 0) uniform sampler2D textures[];
 
 
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len)
@@ -103,7 +107,14 @@ void main()
         weightSum = 1;
     }
     //138
-    out_fragColor = (vec4(light[0] / weightSum, 1) + color_lights) * vec4(surf.color, 1);
+    vec4 albedo = vec4(surf.color, 1);
+    if (materials[uint(surf.materialId)].baseColorTexId != -1)
+    {
+        albedo = texture(textures[materials[uint(surf.materialId)].baseColorTexId], surf.texCoord);
+    }
+    if (albedo.a < 0.5)
+        discard;
+    out_fragColor = (vec4(light[0] / weightSum, 1) + color_lights) * albedo;
     // if (voxelIdx == 56)
     // {
     //     out_fragColor = vec4(1, 0, 0, 1);

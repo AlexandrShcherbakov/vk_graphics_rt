@@ -280,9 +280,14 @@ void SceneManager::LoadOneMeshOnGPU(uint32_t meshIdx)
   m_pCopyHelper->UpdateBuffer(m_geoIdxBuf, m_loadedIndices * m_pMeshData->SingleIndexSize(), indSrc, indexBufSize);
   m_pCopyHelper->UpdateBuffer(m_matIdsBuf,  loadedPrims * sizeof(uint32_t),
     m_matIDs.data() + loadedPrims, (m_meshInfos[meshIdx].m_indNum / 3) * sizeof(m_matIDs[0]));
-  std::vector<uint> perVertMat(vertexBufSize / m_pMeshData->SingleVertexSize());
+  std::vector<uint> perVertMat(m_meshInfos[meshIdx].m_vertNum);
+  int last = -1;
   for (uint32_t i = 0; i < m_meshInfos[meshIdx].m_indNum; ++i)
-    perVertMat[indSrc[i]] = m_matIDs[i / 3];
+  {
+    perVertMat[indSrc[i]] = m_matIDs[loadedPrims + i / 3];
+    assert(last == -1 || last == m_matIDs[loadedPrims + i / 3]);
+    last = m_matIDs[loadedPrims + i / 3];
+  }
 
   m_pCopyHelper->UpdateBuffer(m_matPerVertIdsBuf, m_loadedVertices * sizeof(uint32_t),
     perVertMat.data(), (perVertMat.size()) * sizeof(perVertMat[0]));

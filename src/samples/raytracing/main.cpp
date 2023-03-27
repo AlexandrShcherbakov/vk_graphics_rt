@@ -41,7 +41,8 @@ int main()
 
   initVulkanGLFW(app, window, VULKAN_DEVICE_ID);
 
-  app->LoadScene("../../resources/scenes/02_casual_effects/conference/statex_00001.xml");
+  app->LoadScene("../../resources/scenes/03_classic_scenes/02_cry_sponza/statex_00001.xml");
+  // app->LoadScene("../../resources/scenes/02_casual_effects/conference/statex_00001.xml");
   // app->LoadScene("../../resources/scenes/043_cornell_normals/statex_00001.xml");
   // app->LoadScene("../../resources/scenes/01_simple_scenes/bunny_cornell.xml");
   // app->LoadScene("../../resources/scenes/buggy/Buggy.gltf");

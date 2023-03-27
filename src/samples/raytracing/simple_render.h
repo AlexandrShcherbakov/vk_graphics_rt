@@ -113,6 +113,7 @@ protected:
   {
     LiteMath::float4x4 projView;
     LiteMath::float4x4 model;
+    uint vertexOffset;
   } pushConst2M;
 
   UniformParams m_uniforms {};
@@ -252,7 +253,7 @@ protected:
   VkBuffer ffTmpRowBuffer = VK_NULL_HANDLE;
   VkDeviceMemory ffTmpRowMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
-  const float VOXEL_SIZE = 1.5;//0.125f;
+  const float VOXEL_SIZE = 2.5;//0.125f;
   LiteMath::uint3 voxelsGrid;
   uint32_t voxelsCount = 0;
   uint32_t clustersCount = 0;

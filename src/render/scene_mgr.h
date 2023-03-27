@@ -112,7 +112,7 @@ struct SceneManager
   void BuildTLAS();
 
 private:
-  const std::string missingTextureImgPath = "../resources/data/missing_texture.png";
+  const std::string missingTextureImgPath = "../../resources/data/missing_texture.png";
 
   vk_utils::VulkanImageMem LoadSpecialTexture();
   void InitGeoBuffersGPU(uint32_t a_meshNum, uint32_t a_totalVertNum, uint32_t a_totalIndicesNum);

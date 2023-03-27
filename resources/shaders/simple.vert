@@ -24,11 +24,12 @@ layout (location = 0 ) out VS_OUT
     vec3 wTangent;
     vec2 texCoord;
     vec3 color;
-
+    flat uint materialId;
 } vOut;
 
 layout(binding = 3, set = 0) buffer materialsBuf { MaterialData_pbrMR materials[]; };
 layout(binding = 4, set = 0) buffer materialIdsBuf { uint materialIds[]; };
+layout(binding = 7, set = 0) buffer perInstInfo { uvec2 instInfo[]; };
 
 out gl_PerVertex { vec4 gl_Position; };
 void main(void)
@@ -40,7 +41,8 @@ void main(void)
     vOut.wNorm    = normalize(mat3(transpose(inverse(params.mModel))) * wNorm.xyz);
     vOut.wTangent = normalize(mat3(transpose(inverse(params.mModel))) * wTang.xyz);
     vOut.texCoord = vTexCoordAndTang.xy;
-    vOut.color = materials[materialIds[gl_VertexIndex + gl_BaseVertexARB]].baseColor.xyz;
+    vOut.color = materials[materialIds[gl_BaseVertexARB]].baseColor.xyz;
+    vOut.materialId = materialIds[gl_BaseVertexARB];
 
     gl_Position   = params.mProjView * vec4(vOut.wPos, 1.0);
 }
