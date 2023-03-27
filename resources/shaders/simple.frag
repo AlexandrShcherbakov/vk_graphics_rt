@@ -1,6 +1,7 @@
-#version 450
+#version 460
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_ray_query : require
 
 #include "common.h"
 
@@ -21,7 +22,19 @@ layout(binding = 0, set = 0) uniform AppData
 };
 layout(binding = 1, set = 0) buffer lighting_buf { vec4 lighting[]; };
 layout(binding = 2, set = 0) buffer points_buf { uint points_cnt[]; };
+layout(binding = 5, set = 0) uniform accelerationStructureEXT m_pAccelStruct;
 
+
+bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len)
+{
+  rayQueryEXT rayQuery;
+  rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
+  
+  while(rayQueryProceedEXT(rayQuery)) { }
+ 
+
+  return (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionTriangleEXT);
+}
 
 void main()
 {
@@ -41,9 +54,11 @@ void main()
 
     vec3 N = surf.wNorm; 
 
-    vec4 color1 = vec4(max(dot(N, lightDir1), 0.0f));// * lightColor1;
+    float color1 = max(dot(N, lightDir1), 0.0f);// * lightColor1;
     vec4 color2 = max(dot(N, lightDir2) * 0.5 + 0.5, 0.0f) * lightColor2;
-    vec4 color_lights = color1;//mix(color1, color2, 0.2f);
+    vec4 color_lights = vec4(color1);//mix(color1, color2, 0.2f);
+    if (color1 > 0.0f && !m_pAccelStruct_RayQuery_NearestHit(surf.wPos + N * 1e-3, lightDir1, length(Params.lightPos.xyz - surf.wPos)))
+        color_lights = vec4(0);
 
     out_fragColor = color_lights * Params.baseColor;
     vec3 UVW = (coords - voxelCoord) - 0.5;
