@@ -2,6 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : require
 
+#include "common.h"
 #include "unpack_attributes.h"
 
 
@@ -21,8 +22,12 @@ layout (location = 0 ) out VS_OUT
     vec3 wNorm;
     vec3 wTangent;
     vec2 texCoord;
+    vec3 color;
 
 } vOut;
+
+layout(binding = 3, set = 0) buffer materialsBuf { MaterialData_pbrMR materials[]; };
+layout(binding = 4, set = 0) buffer materialIdsBuf { uint materialIds[]; };
 
 out gl_PerVertex { vec4 gl_Position; };
 void main(void)
@@ -34,6 +39,7 @@ void main(void)
     vOut.wNorm    = normalize(mat3(transpose(inverse(params.mModel))) * wNorm.xyz);
     vOut.wTangent = normalize(mat3(transpose(inverse(params.mModel))) * wTang.xyz);
     vOut.texCoord = vTexCoordAndTang.xy;
+    vOut.color = materials[materialIds[gl_VertexIndex]].baseColor.xyz;
 
     gl_Position   = params.mProjView * vec4(vOut.wPos, 1.0);
 }

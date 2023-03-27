@@ -90,6 +90,7 @@ struct SceneManager
   VkBuffer GetInstanceMatBuffer()  const { return m_instMatricesBuf; }
   VkBuffer GetMaterialsBuffer()    const { return m_materialBuf; }
   VkBuffer GetMaterialIDsBuffer()  const { return m_matIdsBuf; }
+  VkBuffer GetMaterialPerVertexIDsBuffer()  const { return m_matPerVertIdsBuf; }
 
   std::vector<VkSampler> GetTextureSamplers() const { return m_samplers; }
   std::vector<VkImageView>  GetTextureViews() const { return m_textureViews; }
@@ -140,6 +141,7 @@ private:
   VkBuffer m_geoIdxBuf         = VK_NULL_HANDLE;
   VkBuffer m_meshInfoBuf       = VK_NULL_HANDLE;
   VkBuffer m_matIdsBuf         = VK_NULL_HANDLE;
+  VkBuffer m_matPerVertIdsBuf  = VK_NULL_HANDLE;
   VkDeviceMemory m_geoMemAlloc = VK_NULL_HANDLE;
 
   VkBuffer m_instMatricesBuf    = VK_NULL_HANDLE;

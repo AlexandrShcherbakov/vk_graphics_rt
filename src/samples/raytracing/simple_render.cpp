@@ -176,10 +176,12 @@ void SimpleRender::CreateDevice(uint32_t a_deviceId)
 
 void SimpleRender::SetupSimplePipeline()
 {
-  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
+  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT|VK_SHADER_STAGE_VERTEX_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   m_pBindings->BindBuffer(1, appliedLightingBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindBuffer(2, indirectPointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  m_pBindings->BindBuffer(3, m_pScnMgr->GetMaterialsBuffer(), VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  m_pBindings->BindBuffer(4, m_pScnMgr->GetMaterialPerVertexIDsBuffer(), VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   // if we are recreating pipeline (for example, to reload shaders)
@@ -332,7 +334,7 @@ void SimpleRender::CreateUniformBuffer()
   voxelsCount = voxelsGrid.x * voxelsGrid.y * voxelsGrid.z;
   maxPointsCount = voxelsCount * 6 * PER_SURFACE_POINTS;
   std::cout << "Voxels count " << voxelsCount << std::endl;
-  visibleVoxelsApproxCount = voxelsCount * 0.275f;
+  visibleVoxelsApproxCount = voxelsCount * 0.3;//0.275f;
   std::cout << "Approximate visible voxels count " << visibleVoxelsApproxCount << std::endl;
 
   {
@@ -418,7 +420,7 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     clustersCount = visibleVoxelsApproxCount * PER_VOXEL_CLUSTERS;
-    approxColumns = visibleVoxelsApproxCount * 0.16f;
+    approxColumns = visibleVoxelsApproxCount * 0.27;//0.16f;
     VkMemoryRequirements memReq;
     FFClusteredBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(float) * approxColumns * clustersCount,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &memReq);

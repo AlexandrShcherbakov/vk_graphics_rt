@@ -12,6 +12,7 @@ layout (location = 0 ) in VS_OUT
     vec3 wNorm;
     vec3 wTangent;
     vec2 texCoord;
+    vec3 color;
 } surf;
 
 layout(binding = 0, set = 0) uniform AppData
@@ -40,7 +41,7 @@ void main()
 
     vec3 N = surf.wNorm; 
 
-    vec4 color1 = max(dot(N, lightDir1), 0.0f) * lightColor1;
+    vec4 color1 = vec4(max(dot(N, lightDir1), 0.0f));// * lightColor1;
     vec4 color2 = max(dot(N, lightDir2) * 0.5 + 0.5, 0.0f) * lightColor2;
     vec4 color_lights = color1;//mix(color1, color2, 0.2f);
 
@@ -74,7 +75,7 @@ void main()
     for (int i = 1; i < 8; ++i)
         light[0] += light[i];
     //138
-    out_fragColor = vec4(light[0] / weightSum, 1);
+    out_fragColor = (vec4(light[0] / weightSum, 1) + color_lights) * vec4(surf.color, 1);
     // if (voxelIdx == 56)
     // {
     //     out_fragColor = vec4(1, 0, 0, 1);
