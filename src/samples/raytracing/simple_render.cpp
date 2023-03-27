@@ -602,6 +602,7 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
   m_uniforms.bmin = to_float3(sceneBbox.boxMin);
   m_uniforms.bmax = to_float3(sceneBbox.boxMax);
   m_uniforms.voxelSize = VOXEL_SIZE;
+  m_uniforms.interpolation = interpolation ? 1 : 0;
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }
 
@@ -1092,6 +1093,7 @@ void SimpleRender::SetupGUIElements()
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
     ImGui::NewLine();
+    ImGui::Checkbox("Interpolation: ", &interpolation);
 
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),"Press 'B' to recompile and reload shaders");
     ImGui::Text("Changing bindings is not supported.");

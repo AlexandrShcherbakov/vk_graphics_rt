@@ -28,6 +28,7 @@ struct UniformParams
   float time;
   vec3 bmax;
   float voxelSize;
+  uint interpolation;
 };
 
 struct MaterialData_pbrMR
