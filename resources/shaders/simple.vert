@@ -1,6 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : require
+#extension GL_ARB_shader_draw_parameters  : enable
 
 #include "common.h"
 #include "unpack_attributes.h"
@@ -39,7 +40,7 @@ void main(void)
     vOut.wNorm    = normalize(mat3(transpose(inverse(params.mModel))) * wNorm.xyz);
     vOut.wTangent = normalize(mat3(transpose(inverse(params.mModel))) * wTang.xyz);
     vOut.texCoord = vTexCoordAndTang.xy;
-    vOut.color = materials[materialIds[gl_VertexIndex]].baseColor.xyz;
+    vOut.color = materials[materialIds[gl_VertexIndex + gl_BaseVertexARB]].baseColor.xyz;
 
     gl_Position   = params.mProjView * vec4(vOut.wPos, 1.0);
 }
