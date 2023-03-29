@@ -80,10 +80,11 @@ void main()
       }
     }
   }
+  float brightness = 200.0f;
   for (int i = 0; i < 3; ++i)
   {
-    lighting[tid * 6 + i].xyz = positiveLight[i] / kgenArgs.maxPointsPerVoxelCount * 10.0;
-    lighting[tid * 6 + 3 + i].xyz = negativeLight[i] / kgenArgs.maxPointsPerVoxelCount * 10.0;
+    lighting[tid * 6 + i].xyz = positiveLight[i] / kgenArgs.maxPointsPerVoxelCount * brightness;
+    lighting[tid * 6 + 3 + i].xyz = negativeLight[i] / kgenArgs.maxPointsPerVoxelCount * brightness;
   }
   
 }

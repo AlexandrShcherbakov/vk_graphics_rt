@@ -221,6 +221,17 @@ void SimpleRender::SetupSimplePipeline()
     m_debugLinesPipeline.pipeline = VK_NULL_HANDLE;
   }
 
+  if(m_debugCubesPipeline.layout != VK_NULL_HANDLE)
+  {
+    vkDestroyPipelineLayout(m_device, m_debugCubesPipeline.layout, nullptr);
+    m_debugCubesPipeline.layout = VK_NULL_HANDLE;
+  }
+  if(m_debugCubesPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_debugCubesPipeline.pipeline, nullptr);
+    m_debugCubesPipeline.pipeline = VK_NULL_HANDLE;
+  }
+
   vk_utils::GraphicsPipelineMaker maker;
 
   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
@@ -256,6 +267,26 @@ void SimpleRender::SetupSimplePipeline()
     ia.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     m_debugPointsPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
                                                         m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
+  }
+
+  {
+    m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT);
+    m_pBindings->BindBuffer(0, indirectPointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    m_pBindings->BindBuffer(1, samplePointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    m_pBindings->BindEnd(&cubesdSet, &cubesdSetLayout);
+    std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
+    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/debug_cubes.frag.spv";
+    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/debug_cubes.vert.spv";
+
+    maker.LoadShaders(m_device, shader_paths);
+
+    m_debugCubesPipeline.layout = maker.MakeLayout(m_device, {cubesdSetLayout}, sizeof(pushConst2M));
+    maker.SetDefaultState(m_width, m_height);
+
+    VkPipelineVertexInputStateCreateInfo vertInfo = {};
+    vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    m_debugCubesPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
+                                                        m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
   }
 
   {
@@ -603,7 +634,7 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
   m_uniforms.bmin = to_float3(sceneBbox.boxMin);
   m_uniforms.bmax = to_float3(sceneBbox.boxMax);
   m_uniforms.voxelSize = VOXEL_SIZE;
-  m_uniforms.interpolation = interpolation ? 1 : 0;
+  m_uniforms.interpolation = (interpolation ? 1 : 0) | (directLight ? 2 : 0) | (indirectLight ? 4 : 0);
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }
 
@@ -663,25 +694,56 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
 
-    // {
-    //   vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
+    if (debugPoints)
+    {
+      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.pipeline);
 
-    //   vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
-    //                           &pointsdSet, 0, VK_NULL_HANDLE);
+      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugPointsPipeline.layout, 0, 1,
+                              &pointsdSet, 0, VK_NULL_HANDLE);
 
-    //   struct KernelArgsPC
-    //   {
-    //     LiteMath::float4x4 projView;
-    //     uint32_t perFacePointsCount;
-    //   } pcData;
-    //   pcData.projView = pushConst2M.projView;
-    //   pcData.perFacePointsCount = PER_SURFACE_POINTS;
-    //   vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
-    //                       sizeof(pcData), &pcData);
+      struct KernelArgsPC
+      {
+        LiteMath::float4x4 projView;
+        uint32_t perFacePointsCount;
+      } pcData;
+      pcData.projView = pushConst2M.projView;
+      pcData.perFacePointsCount = PER_SURFACE_POINTS;
+      vkCmdPushConstants(a_cmdBuff, m_debugPointsPipeline.layout, stageFlags, 0,
+                          sizeof(pcData), &pcData);
       
-    //   // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
-    //   vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
-    // }
+      // vkCmdDraw(a_cmdBuff, voxelsCount, 1, 0, 0);
+      vkCmdDrawIndirect(a_cmdBuff, indirectPointsBuffer, 0, voxelsCount, sizeof(uint32_t) * 4);
+    }
+
+    if (debugCubes)
+    {
+      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugCubesPipeline.pipeline);
+
+      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugCubesPipeline.layout, 0, 1,
+                              &cubesdSet, 0, VK_NULL_HANDLE);
+
+      struct KernelArgsPC
+      {
+        LiteMath::float4x4 projView;
+        LiteMath::float3 bmin;
+        uint32_t voxelsCount;
+        LiteMath::float3 bmax;
+        float voxelSize;
+        uint32_t maxPointsPerVoxelCount;
+        float debugCubesScale;
+      } pcData;
+      pcData.projView = pushConst2M.projView;
+      pcData.bmin = to_float3(sceneBbox.boxMin);
+      pcData.voxelsCount = voxelsCount;
+      pcData.bmax = to_float3(sceneBbox.boxMax);
+      pcData.voxelSize = VOXEL_SIZE;
+      pcData.maxPointsPerVoxelCount = 6 * PER_SURFACE_POINTS;
+      pcData.debugCubesScale = debugCubesScale;
+      vkCmdPushConstants(a_cmdBuff, m_debugCubesPipeline.layout, stageFlags, 0,
+                          sizeof(pcData), &pcData);
+      
+      vkCmdDraw(a_cmdBuff, 36, voxelsCount, 0, 0);
+    }
 
     {
       vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugLinesPipeline.pipeline);
@@ -1089,12 +1151,18 @@ void SimpleRender::SetupGUIElements()
     t += ImGui::GetIO().DeltaTime;
     m_uniforms.lightPos.x = std::sin(t * 0.2) * 3.5f;
     
-    ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -10.f, 10.f);
+    ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -50.f, 50.f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
     ImGui::NewLine();
     ImGui::Checkbox("Interpolation: ", &interpolation);
+    ImGui::Checkbox("Direct lighting: ", &directLight);
+    ImGui::Checkbox("Indirect lighting: ", &indirectLight);
+    ImGui::Checkbox("Debug points: ", &debugPoints);
+    ImGui::Checkbox("Debug cubes: ", &debugCubes);
+    ImGui::SliderFloat("Debug cubes scale:", &debugCubesScale, 0, 1);
+
 
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),"Press 'B' to recompile and reload shaders");
     ImGui::Text("Changing bindings is not supported.");

@@ -121,7 +121,7 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
   std::array<VkDescriptorBufferInfo, BUFFERS_COUNT> descriptorBufferInfo;
   VkAccelerationStructureKHR accelStructs = {};
   VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelInfo = {};
-  std::array<VkWriteDescriptorSet, BUFFERS_COUNT + 1> writeDescriptorSet;
+  std::array<VkWriteDescriptorSet, BUFFERS_COUNT + 2> writeDescriptorSet;
 
   {
     VulkanRTX* pScene = dynamic_cast<VulkanRTX*>(m_pAccelStruct.get());
@@ -171,6 +171,27 @@ void RayTracer_Generated::InitAllGeneratedDescriptorSets_GenSamples()
     writeDescriptorSet[destBinding].pBufferInfo      = &descriptorBufferInfo[i];
     writeDescriptorSet[destBinding].pImageInfo       = nullptr;
     writeDescriptorSet[destBinding].pTexelBufferView = nullptr; 
+  }
+
+  std::vector<VkDescriptorImageInfo> descInfo(genSamplesData.imageViews.size());
+  {
+    
+    for (uint32_t i = 0; i < genSamplesData.imageViews.size(); ++i)
+    {
+      descInfo[i].sampler = genSamplesData.samplers[i];
+      descInfo[i].imageView = genSamplesData.imageViews[i];
+      descInfo[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+
+    writeDescriptorSet.back()                  = VkWriteDescriptorSet{};
+    writeDescriptorSet.back().sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.back().dstSet           = m_allGeneratedDS[1];
+    writeDescriptorSet.back().dstBinding       = writeDescriptorSet.size() - 1;
+    writeDescriptorSet.back().descriptorCount  = descInfo.size();
+    writeDescriptorSet.back().descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writeDescriptorSet.back().pBufferInfo      = nullptr;
+    writeDescriptorSet.back().pImageInfo       = descInfo.data();
+    writeDescriptorSet.back().pTexelBufferView = nullptr; 
   }
 
   vkUpdateDescriptorSets(device, uint32_t(writeDescriptorSet.size()), writeDescriptorSet.data(), 0, NULL);

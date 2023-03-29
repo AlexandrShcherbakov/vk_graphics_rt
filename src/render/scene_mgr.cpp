@@ -411,7 +411,7 @@ void SceneManager::LoadMaterialDataOnGPU()
         int bpp = texInfo.bytesPerChannel * texInfo.channels;
         if(texInfo.channels == 3)
           bpp = texInfo.bytesPerChannel * (texInfo.channels + 1);
-        m_pCopyHelper->UpdateImage(tex.image, tmp.data(), texInfo.width, texInfo.height, bpp, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        m_pCopyHelper->UpdateImage(tex.image, tmp.data(), texInfo.width, texInfo.height, bpp, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         if(tex.mipLvls > 1)
         {

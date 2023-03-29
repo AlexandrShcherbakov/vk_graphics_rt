@@ -1,6 +1,7 @@
 #version 460
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_ray_query : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 #include "unpack_attributes.h"
 #include "common.h"
@@ -18,11 +19,12 @@ layout(binding = 9, set = 0) buffer usedVoxelsBuffer { uint usedBuffers[]; };
 layout(binding = 10, set = 0) buffer usedVoxelsCountBuffer { uint usedVoxelsCount[]; };
 layout(binding = 11, set = 0) buffer materialsBuf { MaterialData_pbrMR materials[]; };
 layout(binding = 12, set = 0) buffer materialIdsBuf { uint materialIds[]; };
+layout(binding = 13, set = 0) uniform sampler2D textures[];
 
 // RayScene intersection with 'm_pAccelStruct'
 //
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len, inout vec3 target, inout vec3 normal,
-  inout uint startIdxId, inout float area, inout vec3 color)
+  inout uint startIdxId, inout float area, inout vec3 color, inout uint mat_id)
 {
   rayQueryEXT rayQuery;
   rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
@@ -63,6 +65,12 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
 
     uint materialId = materialIds[startIdxId];
     color = materials[materialId].baseColor.xyz;
+    int textureId = materials[materialId].baseColorTexId;
+    mat_id = textureId;
+    if (textureId != -1)
+    {
+      color = pow(texelFetch(textures[textureId], ivec2(0, 0), textureQueryLevels(textures[textureId]) - 1).rgb, vec3(2.2));
+    }
 
     return true;
   }
@@ -153,13 +161,14 @@ void main()
   uint startIdxId;
   float area;
   vec3 color;
-  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId, area, color))
+  uint matId;
+  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId, area, color, matId))
   {
     float targetLen = length(res - point);
     uint targetIdx = atomicAdd(indirect_buf[indirectOffset + 0], 1) + pointsOffset;
     out_points[targetIdx * 3] = vec4(res, startIdxId);
-    out_points[targetIdx * 3 + 1] = vec4(normal, area);
-    out_points[targetIdx * 3 + 2] = vec4(color, 0);
+    out_points[targetIdx * 3 + 1] = vec4(normal, min(area, 1));
+    out_points[targetIdx * 3 + 2] = vec4(color, matId);
     atomicAdd(primCounter[startIdxId], 1);
     if (targetIdx == pointsOffset)
     {

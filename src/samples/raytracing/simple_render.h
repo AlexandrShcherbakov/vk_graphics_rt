@@ -126,11 +126,14 @@ protected:
   pipeline_data_t m_basicForwardPipeline {};
   pipeline_data_t m_debugPointsPipeline {};
   pipeline_data_t m_debugLinesPipeline {};
+  pipeline_data_t m_debugCubesPipeline {};
 
   VkDescriptorSet m_dSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
   VkDescriptorSet pointsdSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout pointsdSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSet cubesdSet = VK_NULL_HANDLE;
+  VkDescriptorSetLayout cubesdSetLayout = VK_NULL_HANDLE;
   VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // rasterization renderpass
 
   LiteMath::float4x4 m_projectionMatrix;
@@ -220,7 +223,7 @@ protected:
   void SetupValidationLayers();
   void GetBbox();
   void setObjectName(VkBuffer buffer, const char *name);
-  const uint32_t PER_SURFACE_POINTS = 16;
+  const uint32_t PER_SURFACE_POINTS = 42;
   const uint32_t PER_VOXEL_POINTS = PER_SURFACE_POINTS * 6;
   const uint32_t PER_VOXEL_CLUSTERS = 6;
   uint32_t pointsToDraw = 0;
@@ -282,6 +285,11 @@ protected:
   void buildAliasTable(const std::vector<FFValue> &ff, const std::vector<uint32_t> &row_lengths);
   bool useAlias = false;
   bool interpolation = true;
+  bool directLight = true;
+  bool indirectLight = true;
+  bool debugPoints = false;
+  bool debugCubes = false;
+  float debugCubesScale = 0.5;
 };
 
 

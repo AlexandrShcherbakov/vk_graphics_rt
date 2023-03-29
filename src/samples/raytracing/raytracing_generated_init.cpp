@@ -150,7 +150,7 @@ VkDescriptorSetLayout RayTracer_Generated::CreateCastSingleRayMegaDSLayout()
 VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
 {
   const uint32_t BUFFERS_COUNT = 12;
-  std::array<VkDescriptorSetLayoutBinding, 1 + BUFFERS_COUNT> dsBindings;
+  std::array<VkDescriptorSetLayoutBinding, 2 + BUFFERS_COUNT> dsBindings;
 
   // binding for m_pAccelStruct
   dsBindings[0].binding            = 0;
@@ -168,6 +168,12 @@ VkDescriptorSetLayout RayTracer_Generated::GenSampleDSLayout()
     dsBindings[bindingId].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
     dsBindings[bindingId].pImmutableSamplers = nullptr;  
   }
+
+  dsBindings.back().binding            = dsBindings.size() - 1;
+  dsBindings.back().descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  dsBindings.back().descriptorCount    = 30;
+  dsBindings.back().stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+  dsBindings.back().pImmutableSamplers = nullptr;  
   
   VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
   descriptorSetLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

@@ -201,7 +201,8 @@ void SimpleRender::TraceGenSamples()
       primCounterBuffer, FFClusteredBuffer, initLightingBuffer, reflLightingBuffer,
       debugBuffer, debugIndirBuffer, nonEmptyVoxelsBuffer, indirVoxelsBuffer,
       appliedLightingBuffer, ffRowLenBuffer, ffTmpRowBuffer,
-      m_pScnMgr->GetMaterialsBuffer(), m_pScnMgr->GetMaterialIDsBuffer());
+      m_pScnMgr->GetMaterialsBuffer(), m_pScnMgr->GetMaterialIDsBuffer(),
+      m_pScnMgr->GetTextureViews(), m_pScnMgr->GetTextureSamplers());
     m_pRayTracerGPU->UpdateAll(m_pCopyHelper);
   }
 
@@ -344,7 +345,7 @@ void SimpleRender::buildAliasTable(const std::vector<FFValue> &ff, const std::ve
     float sum = 0;
     for (uint32_t j = rowBegin; j < rowEnd; ++j)
     {
-      if (ff[j].value < 1e-5)
+      if (ff[j].value < 1e-9)
         continue;
       aliasRow.emplace_back(AliasInst{ff[j].value, {ff[j].idx, 0}});
       sum += ff[j].value;

@@ -20,6 +20,8 @@ if __name__ == '__main__':
         "debug_lines.frag",
         "FinalLighting.comp",
         "packFF.comp",
+        "debug_cubes.vert",
+        "debug_cubes.frag",
     ]
 
     for shader in shader_list:

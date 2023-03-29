@@ -55,7 +55,9 @@ public:
     VkBuffer ff_rows_len_buffer,
     VkBuffer ff_tmp_row_buffer,
     VkBuffer materials_buffer,
-    VkBuffer material_ids_buffer)
+    VkBuffer material_ids_buffer,
+    std::vector<VkImageView> image_views,
+    std::vector<VkSampler> samplers)
   {
     genSamplesData.indirectBuffer = indirect_buffer;
     genSamplesData.inPointsBuffer = points;
@@ -69,6 +71,8 @@ public:
     genSamplesData.debugIndirBuffer = debug_indir_buffer;
     genSamplesData.materialsBuffer = materials_buffer;
     genSamplesData.materialIdsBuffer = material_ids_buffer;
+    genSamplesData.imageViews = std::move(image_views);
+    genSamplesData.samplers = std::move(samplers);
     ffData.clusteredBuffer = ff_clustered_buffer;
     ffData.ffRowsLenBuffer = ff_rows_len_buffer;
     ffData.ffTmpRowBuffer = ff_tmp_row_buffer;
@@ -217,6 +221,8 @@ protected:
     VkBuffer debugIndirBuffer = VK_NULL_HANDLE;
     VkBuffer materialsBuffer = VK_NULL_HANDLE;
     VkBuffer materialIdsBuffer = VK_NULL_HANDLE;
+    std::vector<VkImageView> imageViews;
+    std::vector<VkSampler> samplers;
   } genSamplesData;
 
   struct Voxels

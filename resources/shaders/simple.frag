@@ -68,7 +68,7 @@ void main()
     vec3 UVW = (coords - voxelCoord) - 0.5;
     vec3 light[8];
     float weightSum = 0;
-    if (Params.interpolation == 1)
+    if ((Params.interpolation & 1) == 1)
     {
         for (int i = 0; i < 2; ++i)
             for (int j = 0; j < 2; ++j)
@@ -110,11 +110,17 @@ void main()
     vec4 albedo = vec4(surf.color, 1);
     if (materials[uint(surf.materialId)].baseColorTexId != -1)
     {
-        albedo = texture(textures[materials[uint(surf.materialId)].baseColorTexId], surf.texCoord);
+        albedo = pow(texture(textures[materials[uint(surf.materialId)].baseColorTexId], surf.texCoord), vec4(2.2));
     }
     if (albedo.a < 0.5)
         discard;
-    out_fragColor = (vec4(light[0] / weightSum, 1) + color_lights) * albedo;
+    out_fragColor = vec4(0);
+    if ((Params.interpolation & 2) == 2)
+        out_fragColor += color_lights;
+    if ((Params.interpolation & 4) == 4)
+        out_fragColor += vec4(light[0] / weightSum, 1);
+    out_fragColor *= albedo;
+    out_fragColor = pow(out_fragColor, vec4(1 / 2.2));
     // if (voxelIdx == 56)
     // {
     //     out_fragColor = vec4(1, 0, 0, 1);
