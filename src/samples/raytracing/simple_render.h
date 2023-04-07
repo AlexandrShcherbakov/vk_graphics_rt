@@ -291,6 +291,7 @@ protected:
   bool debugCubes = false;
   float debugCubesScale = 0.5;
   float FFComputeProgress = 0;
+  bool updateLight = true;
 };
 
 

@@ -1160,6 +1160,8 @@ void SimpleRender::SetupGUIElements()
     ImGui::Checkbox("Indirect lighting: ", &indirectLight);
     ImGui::Checkbox("Debug points: ", &debugPoints);
     ImGui::Checkbox("Debug cubes: ", &debugCubes);
+    ImGui::Checkbox("Update init light: ", &updateLight);
+    
     ImGui::SliderFloat("Debug cubes scale:", &debugCubesScale, 0, 1);
 
 
