@@ -295,6 +295,7 @@ void SimpleRender::TraceGenSamples()
   {
     computeState.ff_in = 0;
     computeState.ff_out++;
+    FFComputeProgress = (float)computeState.ff_out / visibleVoxelsCount;
   }
   if (computeState.ff_out == visibleVoxelsCount)
   {

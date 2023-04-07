@@ -290,6 +290,7 @@ protected:
   bool debugPoints = false;
   bool debugCubes = false;
   float debugCubesScale = 0.5;
+  float FFComputeProgress = 0;
 };
 
 

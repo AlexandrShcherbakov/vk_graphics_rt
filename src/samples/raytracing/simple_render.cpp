@@ -1142,8 +1142,7 @@ void SimpleRender::SetupGUIElements()
   {
 //    ImGui::ShowDemoWindow();
     ImGui::Begin("Your render settings here");
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),"Press '1' for rasterization mode");
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Press '2' for raytracing mode");
+    ImGui::Text("Form-factors computation progress: %.2f%%", FFComputeProgress * 100.f);
     ImGui::NewLine();
 
     ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
