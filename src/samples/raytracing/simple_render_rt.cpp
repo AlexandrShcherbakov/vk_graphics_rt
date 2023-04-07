@@ -263,7 +263,8 @@ void SimpleRender::TraceGenSamples()
       if (updateLight)
       {
         m_pRayTracerGPU->initLightingCmd(commandBuffer, visibleVoxelsCount, VOXEL_SIZE,
-          to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos), PER_VOXEL_POINTS);
+          to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos), PER_VOXEL_POINTS,
+          multibounce ? 1 : 0);
         m_pRayTracerGPU->reflLightingCmd(commandBuffer, visibleVoxelsCount);
         m_pRayTracerGPU->finalLightingCmd(commandBuffer, visibleVoxelsCount);
       }
@@ -283,7 +284,8 @@ void SimpleRender::TraceGenSamples()
       vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
       vkCmdFillBuffer(commandBuffer, appliedLightingBuffer, 0, sizeof(float) * voxelsCount * 6, 0);
       m_pRayTracerGPU->initLightingCmd(commandBuffer, visibleVoxelsCount, VOXEL_SIZE,
-        to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos), PER_VOXEL_POINTS);
+        to_float3(sceneBbox.boxMin), to_float3(sceneBbox.boxMax), to_float3(m_uniforms.lightPos), PER_VOXEL_POINTS,
+        multibounce ? 1 : 0);
       m_pRayTracerGPU->aliasLightingCmd(commandBuffer, visibleVoxelsCount);
       m_pRayTracerGPU->finalLightingCmd(commandBuffer, visibleVoxelsCount);
 

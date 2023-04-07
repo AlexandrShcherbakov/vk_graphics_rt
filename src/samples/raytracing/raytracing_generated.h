@@ -136,7 +136,8 @@ public:
     LiteMath::float3 bmin,
     LiteMath::float3 bmax,
     LiteMath::float3 light_pos,
-    uint32_t per_voxels_points_count);
+    uint32_t per_voxels_points_count,
+    uint32_t multibounceFlag);
 
   void reflLightingCmd(VkCommandBuffer a_commandBuffer, uint32_t voxels_count);
   void aliasLightingCmd(VkCommandBuffer a_commandBuffer, uint32_t voxels_count);

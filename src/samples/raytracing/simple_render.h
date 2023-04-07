@@ -292,6 +292,7 @@ protected:
   float debugCubesScale = 0.5;
   float FFComputeProgress = 0;
   bool updateLight = true;
+  bool multibounce = false;
 };
 
 

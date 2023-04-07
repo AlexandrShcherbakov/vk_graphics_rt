@@ -279,7 +279,8 @@ void RayTracer_Generated::initLightingCmd(VkCommandBuffer a_commandBuffer,
   LiteMath::float3 bmin,
   LiteMath::float3 bmax,
   LiteMath::float3 light_pos,
-  uint32_t per_voxels_points_count)
+  uint32_t per_voxels_points_count,
+  uint32_t multibounceFlag)
 {
   m_currCmdBuffer = a_commandBuffer;
   VkMemoryBarrier memoryBarrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT }; 
@@ -293,6 +294,7 @@ void RayTracer_Generated::initLightingCmd(VkCommandBuffer a_commandBuffer,
     float voxelSize;
     LiteMath::float3 lightPos;
     uint32_t perVoxelsPointsCount;
+    uint32_t multibounceFlag;
   } pcData;
 
   pcData.voxelsCount = voxels_count;
@@ -301,6 +303,7 @@ void RayTracer_Generated::initLightingCmd(VkCommandBuffer a_commandBuffer,
   pcData.voxelSize = voxel_size;
   pcData.lightPos = light_pos;
   pcData.perVoxelsPointsCount = per_voxels_points_count;
+  pcData.multibounceFlag = multibounceFlag;
 
   vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, initLightingLayout, 0, 1, &m_allGeneratedDS[3], 0, nullptr);
   vkCmdPushConstants(m_currCmdBuffer, CastSingleRayMegaLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);

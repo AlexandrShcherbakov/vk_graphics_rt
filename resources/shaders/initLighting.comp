@@ -17,6 +17,7 @@ layout(binding = 1, set = 0) buffer lighting_buf { vec4 lighting[]; };
 layout(binding = 2, set = 0) buffer voxelIndicesBuf { uint voxelIndices[]; };
 layout(binding = 3, set = 0) buffer point_buf { SamplePoint points[]; };
 layout(binding = 4, set = 0) buffer indir { uint indirection_buf[]; };
+layout(binding = 5, set = 0) buffer prevFrame { vec4 previousReflection[]; };
 
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len)
 {
@@ -42,6 +43,7 @@ layout( push_constant ) uniform kernelArgs
   float voxelSize;
   vec3 lightPos;
   uint maxPointsPerVoxelCount;
+  uint multibounceFlag;
 } kgenArgs;
 
 shared vec3 arrayToConv[256];
@@ -85,6 +87,11 @@ void main()
   {
     lighting[tid * 6 + i].xyz = positiveLight[i] / kgenArgs.maxPointsPerVoxelCount * brightness;
     lighting[tid * 6 + 3 + i].xyz = negativeLight[i] / kgenArgs.maxPointsPerVoxelCount * brightness;
+    if (kgenArgs.multibounceFlag == 1)
+    {
+      lighting[tid * 6 + i].xyz += previousReflection[tid * 6 + i].xyz;
+      lighting[tid * 6 + 3 + i].xyz += previousReflection[tid * 6 + 3 + i].xyz;
+    }
   }
   
 }
