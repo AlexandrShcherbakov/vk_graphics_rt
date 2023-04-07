@@ -116,14 +116,7 @@ void main()
       if (cosTheta1 <= 0.0)
         continue; 
       if (m_pAccelStruct_RayQuery_NearestHit(pos + dir * 1e-2, dir, len - 1e-2 * 2.0))
-      {
-        if (baseVoxelId == 138 && tid == 5 && false)
-        {
-          uint idx = atomicAdd(debugIndir[0], 2);
-          debug[idx] = i + targetPointsOffset;
-          debug[idx + 1] = tid + sourcePointOffset;
-        }
-        
+      {  
         vec4 p1 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 0) * 2]);
         vec4 p2 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 1) * 2]);
         vec4 p3 = (geomTriangles[uint(points[i + targetPointsOffset].position.w * 3 + 2) * 2]);
