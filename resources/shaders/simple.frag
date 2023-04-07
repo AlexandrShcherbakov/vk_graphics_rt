@@ -40,6 +40,29 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
   return (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionTriangleEXT);
 }
 
+float A = 0.15;
+float B = 0.50;
+float C = 0.10;
+float D = 0.20;
+float E = 0.02;
+float F = 0.30;
+float W = 11.2;
+
+vec3 Uncharted2Tonemap(vec3 x)
+{
+     return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
+vec4 postfx(vec3 texColor)
+{
+    texColor *= Params.exposureValue;
+    float ExposureBias = 2.0f;
+    vec3 curr = Uncharted2Tonemap(ExposureBias*texColor);
+    vec3 whiteScale = 1.0f/Uncharted2Tonemap(vec3(W));
+    vec3 color = curr*whiteScale;
+    return vec4(color,1);
+}
+
 void main()
 {
     vec3 coords = (surf.wPos - Params.bmin) / Params.voxelSize;
@@ -64,7 +87,6 @@ void main()
     if (color1 > 0.0f && !m_pAccelStruct_RayQuery_NearestHit(surf.wPos + N * 1e-3, lightDir1, length(Params.lightPos.xyz - surf.wPos)))
         color_lights = vec4(0);
 
-    out_fragColor = color_lights * Params.baseColor;
     vec3 UVW = (coords - voxelCoord) - 0.5;
     vec3 light[8];
     float weightSum = 0;
@@ -120,6 +142,8 @@ void main()
     if ((Params.interpolation & 4) == 4)
         out_fragColor += vec4(light[0] / weightSum, 1);
     out_fragColor *= albedo;
+    if ((Params.interpolation & 8) == 8)
+        out_fragColor = postfx(out_fragColor.rgb);
     out_fragColor = pow(out_fragColor, vec4(1 / 2.2));
     // if (voxelIdx == 56)
     // {

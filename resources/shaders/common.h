@@ -23,7 +23,8 @@ struct UniformParams
 {
   mat4  lightMatrix;
   vec4  lightPos;
-  vec4  baseColor;
+  vec3  baseColor;
+  float exposureValue;
   vec3 bmin;
   float time;
   vec3 bmax;

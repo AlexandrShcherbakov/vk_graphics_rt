@@ -293,6 +293,7 @@ protected:
   float FFComputeProgress = 0;
   bool updateLight = true;
   bool multibounce = false;
+  bool tonemapping = true;
 };
 
 

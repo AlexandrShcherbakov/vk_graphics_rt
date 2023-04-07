@@ -358,7 +358,7 @@ void SimpleRender::CreateUniformBuffer()
   vkMapMemory(m_device, m_uboAlloc, 0, sizeof(m_uniforms), 0, &m_uboMappedMem);
 
   m_uniforms.lightPos  = LiteMath::float4(0.0f, 1.0f,  1.0f, 1.0f);
-  m_uniforms.baseColor = LiteMath::float4(0.9f, 0.92f, 1.0f, 0.0f);
+  m_uniforms.exposureValue = 1.f;
 
   UpdateUniformBuffer(0.0f);
 
@@ -634,7 +634,8 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
   m_uniforms.bmin = to_float3(sceneBbox.boxMin);
   m_uniforms.bmax = to_float3(sceneBbox.boxMax);
   m_uniforms.voxelSize = VOXEL_SIZE;
-  m_uniforms.interpolation = (interpolation ? 1 : 0) | (directLight ? 2 : 0) | (indirectLight ? 4 : 0);
+  m_uniforms.interpolation = (interpolation ? 1 : 0) | (directLight ? 2 : 0) | (indirectLight ? 4 : 0)
+    | (tonemapping ? 8 : 0);
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }
 
@@ -1145,7 +1146,6 @@ void SimpleRender::SetupGUIElements()
     ImGui::Text("Form-factors computation progress: %.2f%%", FFComputeProgress * 100.f);
     ImGui::NewLine();
 
-    ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
     static float t = 0;
     t += ImGui::GetIO().DeltaTime;
     m_uniforms.lightPos.x = std::sin(t * 0.2) * 3.5f;
@@ -1162,6 +1162,9 @@ void SimpleRender::SetupGUIElements()
     ImGui::Checkbox("Debug cubes: ", &debugCubes);
     ImGui::Checkbox("Update lighting: ", &updateLight);
     ImGui::Checkbox("Multiple bounce: ", &multibounce);
+    ImGui::Checkbox("Tonemapping: ", &tonemapping);
+    ImGui::SliderFloat("Exposure: ", &(m_uniforms.exposureValue), 0.1, 10.f);
+    
     
     ImGui::SliderFloat("Debug cubes scale:", &debugCubesScale, 0, 1);
 
