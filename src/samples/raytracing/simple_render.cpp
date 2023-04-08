@@ -5,6 +5,8 @@
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
 
+#include <random>
+
 SimpleRender::SimpleRender(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
 {
 #ifdef NDEBUG
@@ -136,6 +138,63 @@ void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
   };
   vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
   m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
+  std::array<VkImageLayout, 3> layouts = {
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+  };
+  for (uint32_t i = 0; i < framesSequence.size(); ++i)
+  {
+    framesSequence[i].format = m_swapchain.GetFormat();
+
+    VkImageCreateInfo imgCreateInfo = {};
+    imgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imgCreateInfo.pNext = nullptr;
+    imgCreateInfo.flags = 0;
+    imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imgCreateInfo.format = m_swapchain.GetFormat();
+    imgCreateInfo.extent = VkExtent3D{ m_width, m_height, 1u };
+    imgCreateInfo.mipLevels = 1;
+    imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imgCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_SAMPLED_BIT;
+    imgCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imgCreateInfo.initialLayout = layouts[i];
+    imgCreateInfo.arrayLayers = 1;
+
+    VkImageViewCreateInfo imageViewInfo = {};
+    imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewInfo.flags = 0;
+    imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewInfo.format = m_swapchain.GetFormat();
+    imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewInfo.subresourceRange.baseMipLevel = 0;
+    imageViewInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewInfo.subresourceRange.layerCount = 1;
+    imageViewInfo.subresourceRange.levelCount = 1;
+    imageViewInfo.image = VK_NULL_HANDLE;
+
+    vk_utils::createImgAllocAndBind(m_device, m_physicalDevice, m_width, m_height, m_swapchain.GetFormat(),
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &framesSequence[i], &imgCreateInfo, &imageViewInfo);
+    std::vector<VkImageView> attachments = 
+    {
+      framesSequence[i].view,
+      m_depthBuffer.view
+    };
+
+    VkFramebufferCreateInfo framebufferInfo = {};
+    framebufferInfo.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.renderPass              = m_screenRenderPass;
+    framebufferInfo.attachmentCount         = (uint32_t)attachments.size();
+    framebufferInfo.pAttachments            = attachments.data();
+    framebufferInfo.width                   = m_width;
+    framebufferInfo.height                  = m_height;
+    framebufferInfo.layers                  = 1;
+
+    vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &mainFramebuffers[i]);
+    
+  }
+  defaultSampler = vk_utils::createSampler(m_device);
   m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
 
   m_pGUIRender = std::make_shared<ImGuiRender>(m_instance, m_device, m_physicalDevice, m_queueFamilyIDXs.graphics, m_graphicsQueue, m_swapchain);
@@ -311,6 +370,33 @@ void SimpleRender::SetupSimplePipeline()
     m_debugLinesPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
                                                         m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
   }
+
+  {
+    for (uint32_t i = 0; i < framesSequence.size(); ++i)
+    {
+      m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
+      m_pBindings->BindImage(0, framesSequence[i].view, defaultSampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+      m_pBindings->BindImage(1, framesSequence[(i + framesSequence.size() - 1) % framesSequence.size()].view, defaultSampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+      m_pBindings->BindEnd(&temporalAccumdSet[i], &temporalAccumdSetLayout[i]);
+    }
+    std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
+    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/temporal_accum.frag.spv";
+    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/temporal_accum.vert.spv";
+
+    maker.LoadShaders(m_device, shader_paths);
+
+    m_temporalAccumPipeline.layout = maker.MakeLayout(m_device, {temporalAccumdSetLayout[0]}, sizeof(pushConst2M));
+    maker.SetDefaultState(m_width, m_height);
+
+    VkPipelineVertexInputStateCreateInfo vertInfo = {};
+    vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    VkPipelineInputAssemblyStateCreateInfo ia = {};
+    ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    m_temporalAccumPipeline.pipeline = maker.MakePipeline(m_device, vertInfo,
+                                                        m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, ia);
+  }
+
 }
 
 float radicalInverse_VdC(uint bits) {
@@ -640,7 +726,7 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
 }
 
 void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
-                                            VkImageView, VkPipeline a_pipeline)
+                                            SwapchainAttachment swapchainData, VkPipeline a_pipeline)
 {
   vkResetCommandBuffer(a_cmdBuff, 0);
 
@@ -658,7 +744,7 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_screenRenderPass;
-    renderPassInfo.framebuffer = a_frameBuff;
+    renderPassInfo.framebuffer = mainFramebuffers[0];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
 
@@ -766,9 +852,128 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
     }
 
     vkCmdEndRenderPass(a_cmdBuff);
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = framesSequence[0].image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    barrier.srcAccessMask = VK_IMAGE_ASPECT_COLOR_BIT; // TODO
+    barrier.dstAccessMask = VK_IMAGE_ASPECT_COLOR_BIT; // TODO
+
+    vkCmdPipelineBarrier(
+        a_cmdBuff,
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT , VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT ,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+
+    renderPassInfo.framebuffer = mainFramebuffers[1];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
+
+    vkCmdBeginRenderPass(a_cmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    {
+      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_temporalAccumPipeline.pipeline);
+
+      vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_temporalAccumPipeline.layout, 0, 1,
+                              &temporalAccumdSet[0], 0, VK_NULL_HANDLE);
+
+      struct KernelArgsPC
+      {
+        float blendFactor;
+      } pcData;
+      pcData.blendFactor = blendFactor;
+      vkCmdPushConstants(a_cmdBuff, m_temporalAccumPipeline.layout, stageFlags, 0,
+                          sizeof(pcData), &pcData);
+      
+      vkCmdDraw(a_cmdBuff, 3, 1, 0, 0);
+    }
+    vkCmdEndRenderPass(a_cmdBuff);
+
+    VkImageCopy cp{};
+    cp.srcOffset = VkOffset3D{0, 0, 0};
+    cp.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    cp.srcSubresource.layerCount = 1;
+    cp.dstOffset = VkOffset3D{0, 0, 0};
+    cp.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    cp.dstSubresource.layerCount = 1;
+    cp.extent = VkExtent3D{m_swapchain.GetExtent().width, m_swapchain.GetExtent().height, 1};
+
+
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.image = swapchainData.image;
+    vkCmdPipelineBarrier(
+        a_cmdBuff,
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT , VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT ,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+
+    barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    barrier.image = framesSequence[1].image;
+    vkCmdPipelineBarrier(
+        a_cmdBuff,
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT , VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT ,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+
+    vkCmdCopyImage(a_cmdBuff, framesSequence[1].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+      swapchainData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &cp);
+
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.image = framesSequence[1].image;
+    vkCmdPipelineBarrier(
+        a_cmdBuff,
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT , VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT ,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    barrier.image = swapchainData.image;
+    vkCmdPipelineBarrier(
+        a_cmdBuff,
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT , VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT ,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
   }
 
   VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
+  std::swap(temporalAccumdSet[2], temporalAccumdSet[1]);
+  std::swap(temporalAccumdSetLayout[2], temporalAccumdSetLayout[1]);
+  std::swap(framesSequence[2], framesSequence[1]);
+  std::swap(mainFramebuffers[2], mainFramebuffers[1]);
+  std::swap(temporalAccumdSet[0], temporalAccumdSet[1]);
+  std::swap(temporalAccumdSetLayout[0], temporalAccumdSetLayout[1]);
+  std::swap(framesSequence[0], framesSequence[1]);
+  std::swap(mainFramebuffers[0], mainFramebuffers[1]);
 }
 
 void SimpleRender::BuildCommandBufferQuad(VkCommandBuffer a_cmdBuff, VkImageView a_targetImageView)
@@ -885,7 +1090,7 @@ void SimpleRender::ProcessInput(const AppInput &input)
     for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
       BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-                               m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+                               m_swapchain.GetAttachment(i), m_basicForwardPipeline.pipeline);
     }
   }
 
@@ -913,7 +1118,34 @@ void SimpleRender::UpdateView()
   auto mProjFix        = OpenglToVulkanProjectionMatrixFix();
   m_projectionMatrix   = projectionMatrix(m_cam.fov, aspect, 0.1f, 1000.0f);
   auto mLookAt         = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
-  auto mWorldViewProj  = mProjFix * m_projectionMatrix * mLookAt;
+  auto mWorldViewProj = LiteMath::float4x4();
+  if (temporalAccumulation)
+  { 
+    const int HALTON_COUNT = 8;
+    const vec2 HALTON_SEQUENCE[8] = {
+      vec2(1.0 / 2.0, 1.0 / 3.0),
+      vec2(1.0 / 4.0, 2.0 / 3.0),
+      vec2(3.0 / 4.0, 1.0 / 9.0),
+      vec2(1.0 / 8.0, 4.0 / 9.0),
+      vec2(5.0 / 8.0, 7.0 / 9.0),
+      vec2(3.0 / 8.0, 2.0 / 9.0),
+      vec2(7.0 / 8.0, 5.0 / 9.0),
+      vec2(1.0 / 16.0, 8.0 / 9.0),
+    };
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist6(0,7);
+    const float JITTER_SCALE = 1.2f;
+    vec2 jitter = ((HALTON_SEQUENCE[dist6(rng) % HALTON_COUNT]) - 0.5f) * JITTER_SCALE / vec2(m_width, m_height);
+    float4x4 JitterMat = LiteMath::float4x4();
+    JitterMat(0,3) = jitter.x;
+    JitterMat(1,3) = jitter.y;
+    mWorldViewProj = mProjFix * JitterMat * m_projectionMatrix * mLookAt;
+  }
+  else
+  {
+    mWorldViewProj = mProjFix * m_projectionMatrix * mLookAt;
+  }
   pushConst2M.projView = mWorldViewProj;
 
   m_inverseProjViewMatrix = LiteMath::inverse4x4(m_projectionMatrix * transpose(inverse4x4(mLookAt)));
@@ -966,7 +1198,7 @@ void SimpleRender::DrawFrameSimple()
   if(m_currentRenderMode == RenderMode::RASTERIZATION)
   {
     TraceGenSamples();
-    BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx).view, m_basicForwardPipeline.pipeline);
+    BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx), m_basicForwardPipeline.pipeline);
   }
   else if(m_currentRenderMode == RenderMode::RAYTRACING)
   {
@@ -1145,10 +1377,6 @@ void SimpleRender::SetupGUIElements()
     ImGui::Begin("Your render settings here");
     ImGui::Text("Form-factors computation progress: %.2f%%", FFComputeProgress * 100.f);
     ImGui::NewLine();
-
-    static float t = 0;
-    t += ImGui::GetIO().DeltaTime;
-    m_uniforms.lightPos.x = std::sin(t * 0.2) * 3.5f;
     
     ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -50.f, 50.f);
 
@@ -1163,7 +1391,10 @@ void SimpleRender::SetupGUIElements()
     ImGui::Checkbox("Update lighting: ", &updateLight);
     ImGui::Checkbox("Multiple bounce: ", &multibounce);
     ImGui::Checkbox("Tonemapping: ", &tonemapping);
+    ImGui::Checkbox("Temporal accumulation: ", &temporalAccumulation);
     ImGui::SliderFloat("Exposure: ", &(m_uniforms.exposureValue), 0.1, 10.f);
+    ImGui::SliderFloat("Blend factor: ", &(blendFactor), 0, 1.f);
+    
     
     
     ImGui::SliderFloat("Debug cubes scale:", &debugCubesScale, 0, 1);
@@ -1205,7 +1436,7 @@ void SimpleRender::DrawFrameWithGUI()
   if(m_currentRenderMode == RenderMode::RASTERIZATION)
   {
     TraceGenSamples();
-    BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx).view, m_basicForwardPipeline.pipeline);
+    BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx), m_basicForwardPipeline.pipeline);
   }
   else if(m_currentRenderMode == RenderMode::RAYTRACING)
   {

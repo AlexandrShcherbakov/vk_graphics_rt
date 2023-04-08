@@ -22,6 +22,8 @@ if __name__ == '__main__':
         "packFF.comp",
         "debug_cubes.vert",
         "debug_cubes.frag",
+        "temporal_accum.vert",
+        "temporal_accum.frag",
     ]
 
     for shader in shader_list:

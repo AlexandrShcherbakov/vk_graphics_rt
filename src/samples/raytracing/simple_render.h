@@ -127,6 +127,7 @@ protected:
   pipeline_data_t m_debugPointsPipeline {};
   pipeline_data_t m_debugLinesPipeline {};
   pipeline_data_t m_debugCubesPipeline {};
+  pipeline_data_t m_temporalAccumPipeline {};
 
   VkDescriptorSet m_dSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
@@ -134,6 +135,8 @@ protected:
   VkDescriptorSetLayout pointsdSetLayout = VK_NULL_HANDLE;
   VkDescriptorSet cubesdSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout cubesdSetLayout = VK_NULL_HANDLE;
+  std::array<VkDescriptorSet, 3> temporalAccumdSet = {};
+  std::array<VkDescriptorSetLayout, 3> temporalAccumdSetLayout = {};
   VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // rasterization renderpass
 
   LiteMath::float4x4 m_projectionMatrix;
@@ -168,6 +171,9 @@ protected:
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
   vk_utils::VulkanImageMem m_depthBuffer{};
+  std::array<vk_utils::VulkanImageMem, 3> framesSequence{};
+  std::array<VkFramebuffer, 3> mainFramebuffers{};
+  VkSampler defaultSampler{};
   // ***
 
   // *** GUI
@@ -197,7 +203,7 @@ protected:
   void CreateDevice(uint32_t a_deviceId);
 
   void BuildCommandBufferSimple(VkCommandBuffer cmdBuff, VkFramebuffer frameBuff,
-                                VkImageView a_targetImageView, VkPipeline a_pipeline);
+                                SwapchainAttachment a_targetImageView, VkPipeline a_pipeline);
 
   // *** Ray tracing related stuff
   void BuildCommandBufferQuad(VkCommandBuffer a_cmdBuff, VkImageView a_targetImageView);
@@ -294,6 +300,8 @@ protected:
   bool updateLight = true;
   bool multibounce = false;
   bool tonemapping = true;
+  bool temporalAccumulation = true;
+  float blendFactor = 0.97f;
 };
 
 

@@ -14,6 +14,7 @@ void SimpleRender::SetupQuadRenderer()
   rtargetInfo.size   = m_swapchain.GetExtent();
   m_pFSQuad.reset();
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, m_width, m_height);
+  
   m_pFSQuad->Create(m_device, "../../resources/shaders/quad3_vert.vert.spv", "../../resources/shaders/my_quad.frag.spv", rtargetInfo);
 }
 
