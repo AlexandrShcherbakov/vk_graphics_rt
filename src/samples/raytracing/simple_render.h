@@ -301,6 +301,7 @@ protected:
   bool multibounce = false;
   bool tonemapping = true;
   bool temporalAccumulation = true;
+  bool screenshotRequested = false;
   float blendFactor = 0.97f;
 };
 

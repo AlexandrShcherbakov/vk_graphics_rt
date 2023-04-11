@@ -6,6 +6,8 @@
 #include <vk_buffers.h>
 
 #include <random>
+#include <chrono>
+#include "stb_image_write.h"
 
 SimpleRender::SimpleRender(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
 {
@@ -966,6 +968,27 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
   }
 
   VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
+
+  if (screenshotRequested)
+  {
+    std::vector<uint32_t> imageData(m_width * m_height);
+    m_pCopyHelper->ReadImage(framesSequence[1].image, imageData.data(), m_width, m_height, 4, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    for (uint32_t &color : imageData)
+    {
+      color = 0xFF000000
+        | (((color >> 16) & 0xFF) << 0)
+        | (((color >> 8) & 0xFF) << 8)
+        | (((color >> 0) & 0xFF) << 16);
+    }
+    std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::string dateStr = std::ctime(&end_time);
+    dateStr.resize(dateStr.size() - 1);
+    std::replace(dateStr.begin(), dateStr.end(), ':', '_');
+    std::replace(dateStr.begin(), dateStr.end(), ' ', '_');
+
+    stbi_write_png((std::string("Screenshots/") + dateStr + ".png").c_str(), m_width, m_height, 4, imageData.data(), 4 * m_width);
+  }
+
   std::swap(temporalAccumdSet[2], temporalAccumdSet[1]);
   std::swap(temporalAccumdSetLayout[2], temporalAccumdSetLayout[1]);
   std::swap(framesSequence[2], framesSequence[1]);
@@ -1394,6 +1417,7 @@ void SimpleRender::SetupGUIElements()
     ImGui::Checkbox("Temporal accumulation: ", &temporalAccumulation);
     ImGui::SliderFloat("Exposure: ", &(m_uniforms.exposureValue), 0.1, 10.f);
     ImGui::SliderFloat("Blend factor: ", &(blendFactor), 0, 1.f);
+    screenshotRequested = ImGui::Button("Make screenshot");
     
     
     
