@@ -251,7 +251,7 @@ VkDescriptorSetLayout RayTracer_Generated::CreatePackFFDSLayout()
 
 VkDescriptorSetLayout RayTracer_Generated::CreateInitLightingDSLayout()
 {
-  const uint32_t BUFFERS_COUNT = 5;
+  const uint32_t BUFFERS_COUNT = 6;
   std::array<VkDescriptorSetLayoutBinding, 1 + BUFFERS_COUNT> dsBindings;
 
   // binding for m_pAccelStruct

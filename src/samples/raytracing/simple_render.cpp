@@ -53,6 +53,8 @@ void SimpleRender::SetupDeviceExtensions()
   m_deviceExtensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
   // Required by VK_KHR_spirv_1_4
   m_deviceExtensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
+
+  m_deviceExtensions.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
 }
 
 void SimpleRender::GetRTFeatures()
@@ -245,6 +247,7 @@ void SimpleRender::SetupSimplePipeline()
   m_pBindings->BindBuffer(4, m_pScnMgr->GetMaterialPerVertexIDsBuffer(), VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindAccelStruct(5, m_pScnMgr->GetTLAS(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
   m_pBindings->BindImageArray(6, m_pScnMgr->GetTextureViews(), m_pScnMgr->GetTextureSamplers());
+  m_pBindings->BindBuffer(7, indirectPointsBuffer, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   // if we are recreating pipeline (for example, to reload shaders)
@@ -446,6 +449,8 @@ void SimpleRender::CreateUniformBuffer()
   vkMapMemory(m_device, m_uboAlloc, 0, sizeof(m_uniforms), 0, &m_uboMappedMem);
 
   m_uniforms.lightPos  = LiteMath::float4(0.0f, 1.0f,  1.0f, 1.0f);
+  // m_uniforms.lightPos  = LiteMath::float4(0.685000002f, 50.0000000f,  -39.3330002f, 1.0f);
+  m_uniforms.lightPos  = LiteMath::float4(0.0f, 36.0000000f, 4.9f, 1.0f);
   m_uniforms.exposureValue = 1.f;
 
   UpdateUniformBuffer(0.0f);
@@ -715,8 +720,15 @@ void SimpleRender::CreateUniformBuffer()
   }
 }
 
+float modify(float x)
+{
+  float q = std::abs(std::fmod(x, 2.0f) - 1.0f);
+  return 6 * q * q * q * q * q - 15 * q * q * q * q + 10 * q * q * q;
+}
+
 void SimpleRender::UpdateUniformBuffer(float a_time)
 {
+  m_uniforms.lightPos.z = modify(a_time * lightSpeed) * (4.9f+ 6.8f) - 6.8f;
 // most uniforms are updated in GUI -> SetupGUIElements()
   m_uniforms.time = a_time;
   m_uniforms.bmin = to_float3(sceneBbox.boxMin);
@@ -972,7 +984,7 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
   if (screenshotRequested)
   {
     std::vector<uint32_t> imageData(m_width * m_height);
-    m_pCopyHelper->ReadImage(framesSequence[1].image, imageData.data(), m_width, m_height, 4, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    m_pCopyHelper->ReadImage(framesSequence[0].image, imageData.data(), m_width, m_height, 4, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     for (uint32_t &color : imageData)
     {
       color = 0xFF000000
@@ -1093,6 +1105,8 @@ void SimpleRender::RecreateSwapChain()
   m_pGUIRender->OnSwapchainChanged(m_swapchain);
 }
 
+extern bool enableImgui;
+
 void SimpleRender::ProcessInput(const AppInput &input)
 {
   // add keyboard controls here
@@ -1126,6 +1140,9 @@ void SimpleRender::ProcessInput(const AppInput &input)
     m_currentRenderMode = RenderMode::RAYTRACING;
   }
 
+  if (input.keyPressed[GLFW_KEY_Z])
+    enableImgui = !enableImgui;
+
 }
 
 void SimpleRender::UpdateCamera(const Camera* cams, uint32_t a_camsCount)
@@ -1158,7 +1175,7 @@ void SimpleRender::UpdateView()
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> dist6(0,7);
-    const float JITTER_SCALE = 1.2f;
+    const float JITTER_SCALE = 2.0f;
     vec2 jitter = ((HALTON_SEQUENCE[dist6(rng) % HALTON_COUNT]) - 0.5f) * JITTER_SCALE / vec2(m_width, m_height);
     float4x4 JitterMat = LiteMath::float4x4();
     JitterMat(0,3) = jitter.x;
@@ -1400,7 +1417,7 @@ void SimpleRender::SetupGUIElements()
     ImGui::Begin("Your render settings here");
     ImGui::Text("Form-factors computation progress: %.2f%%", FFComputeProgress * 100.f);
     ImGui::NewLine();
-    
+
     ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -50.f, 50.f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -1416,8 +1433,12 @@ void SimpleRender::SetupGUIElements()
     ImGui::Checkbox("Tonemapping: ", &tonemapping);
     ImGui::Checkbox("Temporal accumulation: ", &temporalAccumulation);
     ImGui::SliderFloat("Exposure: ", &(m_uniforms.exposureValue), 0.1, 10.f);
-    ImGui::SliderFloat("Blend factor: ", &(blendFactor), 0, 1.f);
+    ImGui::SliderFloat("Blend factor: ", &(blendFactor), 0, 0.97f);
+    ImGui::SliderFloat("Light speed: ", &(lightSpeed), 0.01, 0.5);
+    
     screenshotRequested = ImGui::Button("Make screenshot");
+    if (useAlias && !switchAlias)
+      switchAlias = ImGui::Button("Use alias tables");
     
     
     

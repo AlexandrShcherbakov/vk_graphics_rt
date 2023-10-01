@@ -262,7 +262,7 @@ protected:
   VkBuffer ffTmpRowBuffer = VK_NULL_HANDLE;
   VkDeviceMemory ffTmpRowMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
-  const float VOXEL_SIZE = 2.5;//0.125f;
+  const float VOXEL_SIZE = 2.5f;//0.125f;
   LiteMath::uint3 voxelsGrid;
   uint32_t voxelsCount = 0;
   uint32_t clustersCount = 0;
@@ -290,6 +290,7 @@ protected:
 
   void buildAliasTable(const std::vector<FFValue> &ff, const std::vector<uint32_t> &row_lengths);
   bool useAlias = false;
+  bool switchAlias = false;
   bool interpolation = true;
   bool directLight = true;
   bool indirectLight = true;
@@ -302,7 +303,8 @@ protected:
   bool tonemapping = true;
   bool temporalAccumulation = true;
   bool screenshotRequested = false;
-  float blendFactor = 0.97f;
+  float blendFactor = 0.0f;
+  float lightSpeed = 0.05f;
 };
 
 

@@ -243,7 +243,8 @@ void SimpleRender::TraceGenSamples()
       std::cout << "Visible voxels count " << visibleVoxelsCount << std::endl;
       assert(visibleVoxelsApproxCount >= visibleVoxelsCount);
     }
-    if (!useAlias)
+    
+    if (!switchAlias)
     {
       VkCommandBuffer commandBuffer = vk_utils::createCommandBuffer(m_device, m_commandPool);
 
@@ -253,12 +254,16 @@ void SimpleRender::TraceGenSamples()
 
       vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
       if (computeState.version == 0 && computeState.ff_out == 0 && computeState.ff_in == 0)
+      {
         vkCmdFillBuffer(commandBuffer, FFClusteredBuffer, 0, 2 * sizeof(float) * approxColumns * clustersCount, 0);
-      if (computeState.ff_out == 0 && computeState.ff_in == 0)
         vkCmdFillBuffer(commandBuffer, ffRowLenBuffer, 0, sizeof(uint32_t) * clustersCount, 0);
+      } 
       vkCmdFillBuffer(commandBuffer, appliedLightingBuffer, 0, sizeof(float) * voxelsCount * 6, 0);
-      m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, visibleVoxelsCount, computeState.ff_out);
-      m_pRayTracerGPU->packFFCmd(commandBuffer, PER_SURFACE_POINTS, visibleVoxelsCount, computeState.ff_out);
+      if (!useAlias)
+      {
+        m_pRayTracerGPU->ComputeFFCmd(commandBuffer, PER_SURFACE_POINTS, visibleVoxelsCount, computeState.ff_out);
+        m_pRayTracerGPU->packFFCmd(commandBuffer, PER_SURFACE_POINTS, visibleVoxelsCount, computeState.ff_out);
+      }
       // if (computeState.ff_out + 1 == visibleVoxelsCount && computeState.ff_in + FF_UPDATE_COUNT >= visibleVoxelsCount)
       //   m_pRayTracerGPU->CorrectFFCmd(commandBuffer, visibleVoxelsCount);
       if (updateLight)
@@ -310,6 +315,10 @@ void SimpleRender::TraceGenSamples()
   }
   if (computeState.ff_out == 0 && computeState.ff_in == 0 && computeState.version == 1)
   {
+    useAlias = true;
+  }
+  if (useAlias && switchAlias)
+  {
     std::vector<uint32_t> rowLens(visibleVoxelsCount * 6 + 1);
     m_pCopyHelper->ReadBuffer(ffRowLenBuffer, 0, rowLens.data(), sizeof(rowLens[0]) * rowLens.size());
     std::cout << "FF total count:" << rowLens.back() << std::endl;
@@ -328,7 +337,7 @@ void SimpleRender::TraceGenSamples()
     }
     m_pCopyHelper->UpdateBuffer(FFClusteredBuffer, 0, aliasValues.data(), aliasValues.size() * sizeof(aliasValues[0]));
     m_pCopyHelper->UpdateBuffer(ffRowLenBuffer, 0, aliasRowLengths.data(), aliasRowLengths.size() * sizeof(aliasRowLengths[0]));
-    useAlias = true;
+    useAlias = false;
   }
 }
 

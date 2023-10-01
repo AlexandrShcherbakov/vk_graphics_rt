@@ -18,6 +18,7 @@ layout(binding = 2, set = 0) buffer voxelIndicesBuf { uint voxelIndices[]; };
 layout(binding = 3, set = 0) buffer point_buf { SamplePoint points[]; };
 layout(binding = 4, set = 0) buffer indir { uint indirection_buf[]; };
 layout(binding = 5, set = 0) buffer prevFrame { vec4 previousReflection[]; };
+layout(binding = 6, set = 0) buffer primCounterCount { uint primCounter[]; };
 
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len)
 {
@@ -72,9 +73,13 @@ void main()
     vec3 toLight = kgenArgs.lightPos - pos;
     float toLightDist = length(toLight);
     vec3 toLightDir = toLight / toLightDist;
+    toLightDir = vec3(0, 0.948773, 0.31596);
+    toLightDist = 40.f;
     if (m_pAccelStruct_RayQuery_NearestHit(pos, toLightDir, toLightDist))
     {
       vec3 color = points[i + pointsOffset].color.xyz;
+      float primArea = points[i + pointsOffset].normal.w / primCounter[uint(points[i + pointsOffset].position.w)];
+      // color *= primArea * 20;
       for (int j = 0; j < 3; ++j)
       {
         positiveLight[j] += max(vec3(0), toLightDir[j]) * color;

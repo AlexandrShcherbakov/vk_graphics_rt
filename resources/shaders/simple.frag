@@ -3,6 +3,8 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_nonuniform_qualifier : require
+// #extension GL_EXT_debug_printf :enable
+// #extension GL_EXT_spirv_intrinsics : require
 
 #include "common.h"
 
@@ -71,6 +73,9 @@ void main()
     uint voxelsCount = voxelsExtend.x * voxelsExtend.y * voxelsExtend.z;
     uint voxelIdx = (voxelCoord.x * voxelsExtend.y + voxelCoord.y) * voxelsExtend.z + voxelCoord.z;
     vec3 lightDir1 = normalize(Params.lightPos.xyz - surf.wPos);
+    float traceDist = length(Params.lightPos.xyz - surf.wPos);
+    lightDir1 = vec3(0, 0.948773, 0.31596);
+    traceDist = 40.f;
     vec3 lightDir2 = vec3(0.0f, 0.0f, 1.0f);
 
     const vec4 dark_violet = vec4(0.59f, 0.0f, 0.82f, 1.0f);
@@ -83,8 +88,8 @@ void main()
 
     float color1 = max(dot(N, lightDir1), 0.0f);// * lightColor1;
     vec4 color2 = max(dot(N, lightDir2) * 0.5 + 0.5, 0.0f) * lightColor2;
-    vec4 color_lights = vec4(color1);//mix(color1, color2, 0.2f);
-    if (color1 > 0.0f && !m_pAccelStruct_RayQuery_NearestHit(surf.wPos + N * 1e-3, lightDir1, length(Params.lightPos.xyz - surf.wPos)))
+    vec4 color_lights = vec4(color1) * vec4(1, 0.94902, 0.89803, 1) * 15.0f;//mix(color1, color2, 0.2f);
+    if (color1 > 0.0f && !m_pAccelStruct_RayQuery_NearestHit(surf.wPos + N * 1e-3, lightDir1, traceDist))
         color_lights = vec4(0);
 
     vec3 UVW = (coords - voxelCoord) - 0.5;
@@ -145,6 +150,9 @@ void main()
     if ((Params.interpolation & 8) == 8)
         out_fragColor = postfx(out_fragColor.rgb);
     out_fragColor = pow(out_fragColor, vec4(1 / 2.2));
+    // float value = min(length(dFdx(surf.wPos)), length(dFdy(surf.wPos)));
+    // if (value < 0.017)
+    //     debugPrintfEXT("%f", value);
     // if (voxelIdx == 56)
     // {
     //     out_fragColor = vec4(1, 0, 0, 1);

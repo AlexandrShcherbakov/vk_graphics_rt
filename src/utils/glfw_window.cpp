@@ -182,6 +182,7 @@ void setupImGuiContext(GLFWwindow* a_window)
   ImGui_ImplGlfw_InitForVulkan(a_window, true);
 }
 
+bool enableImgui = true;
 
 void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI)
 {
@@ -208,7 +209,7 @@ void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI
     
     app->ProcessInput(g_appInput);
     app->UpdateCamera(g_appInput.cams, 2);
-    if(displayGUI)
+    if(displayGUI && enableImgui)
       app->DrawFrame(static_cast<float>(thisTime), DrawMode::WITH_GUI);
     else
       app->DrawFrame(static_cast<float>(thisTime), DrawMode::NO_GUI);
@@ -219,13 +220,14 @@ void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI
     avgCounter++;
     if(avgCounter >= NAverage)
     {
-      auto title = "test";//app->GetWindowTitle();
-      std::stringstream strout;
-      strout << "FPS = " << int( 1.0/(avgTime/double(NAverage)) ) << " " << title;
+      // auto title = "test";//app->GetWindowTitle();
+      // std::stringstream strout;
+      // strout << "FPS = " << int( 1.0/(avgTime/double(NAverage)) ) << " " << title;
 
-      glfwSetWindowTitle(window, strout.str().c_str());
-      avgTime    = 0.0;
-      avgCounter = 0;
+      // glfwSetWindowTitle(window, strout.str().c_str());
+      // avgTime    = 0.0;
+      // avgCounter = 0;
     }
+    glfwSetWindowTitle(window, "Temporal radiosity");
   }
 }
