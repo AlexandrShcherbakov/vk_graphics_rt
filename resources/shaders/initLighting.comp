@@ -69,15 +69,24 @@ void main()
   uint pointsOffset = kgenArgs.maxPointsPerVoxelCount * voxelId;
   for (int i = 0; i < indirection_buf[voxelId * 4]; ++i)
   {
-    vec3 pos = points[i + pointsOffset].position.xyz + points[i + pointsOffset].normal.xyz * 1e-3;
+    vec3 normal = points[i + pointsOffset].normal.xyz;
+    vec3 pos = points[i + pointsOffset].position.xyz + normal * 1e-3;
     vec3 toLight = kgenArgs.lightPos - pos;
     float toLightDist = length(toLight);
     vec3 toLightDir = toLight / toLightDist;
-    toLightDir = vec3(0, 0.948773, 0.31596);
-    toLightDist = 40.f;
+    // toLightDir = vec3(0, 0.948773, 0.31596);
+    // toLightDist = 40.f;
+    uint emissionEnc = floatBitsToUint(points[i + pointsOffset].color.y);
+    vec3 emission = vec3(uvec3((emissionEnc >> 16) & 0xFF, (emissionEnc >> 8) & 0xFF, emissionEnc & 0xFF)) / 255.0 * points[i + pointsOffset].color.z;
+    for (int j = 0; j < 3; ++j)
+    {
+      positiveLight[j] += max(vec3(0), normal[j]) * emission;
+      negativeLight[j] += max(vec3(0), -normal[j]) * emission;
+    }
     if (m_pAccelStruct_RayQuery_NearestHit(pos, toLightDir, toLightDist))
     {
-      vec3 color = points[i + pointsOffset].color.xyz;
+      uint colorEnc = floatBitsToUint(points[i + pointsOffset].color.x);
+      vec3 color = vec3(uvec3((colorEnc >> 16) & 0xFF, (colorEnc >> 8) & 0xFF, colorEnc & 0xFF)) / 255.0;
       float primArea = points[i + pointsOffset].normal.w / primCounter[uint(points[i + pointsOffset].position.w)];
       // color *= primArea * 20;
       for (int j = 0; j < 3; ++j)

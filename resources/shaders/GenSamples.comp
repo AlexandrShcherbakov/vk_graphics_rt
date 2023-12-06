@@ -24,7 +24,7 @@ layout(binding = 13, set = 0) uniform sampler2D textures[];
 // RayScene intersection with 'm_pAccelStruct'
 //
 bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, float len, inout vec3 target, inout vec3 normal,
-  inout uint startIdxId, inout float area, inout vec3 color, inout uint mat_id)
+  inout uint startIdxId, inout float area, inout vec3 color, inout int mat_id, inout vec3 emission)
 {
   rayQueryEXT rayQuery;
   rayQueryInitializeEXT(rayQuery, m_pAccelStruct, gl_RayFlagsOpaqueEXT, 0xff, rayPos.xyz, 0, rayDir.xyz, len);
@@ -37,10 +37,12 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
 	  float t         = rayQueryGetIntersectionTEXT(rayQuery, true);
     int instanceIdx = rayQueryGetIntersectionInstanceCustomIndexEXT(rayQuery, true);
     uint primIdx = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, true);
-    startIdxId = primIdx + instInfo[instanceIdx].x / 3;
-    uint idx1 = indexBuffer[startIdxId * 3 + 0] + instInfo[instanceIdx].y;
-    uint idx2 = indexBuffer[startIdxId * 3 + 1] + instInfo[instanceIdx].y;
-    uint idx3 = indexBuffer[startIdxId * 3 + 2] + instInfo[instanceIdx].y;
+    int meshIdx = instanceIdx & ((1 << 12) - 1);
+    instanceIdx >>= 12;
+    startIdxId = primIdx + instInfo[meshIdx].x / 3;
+    uint idx1 = indexBuffer[startIdxId * 3 + 0] + instInfo[meshIdx].y;
+    uint idx2 = indexBuffer[startIdxId * 3 + 1] + instInfo[meshIdx].y;
+    uint idx3 = indexBuffer[startIdxId * 3 + 2] + instInfo[meshIdx].y;
     vec4 p1 = (geomTriangles[idx1 * 2]);
     vec4 p2 = (geomTriangles[idx2 * 2]);
     vec4 p3 = (geomTriangles[idx3 * 2]);
@@ -53,20 +55,23 @@ bool m_pAccelStruct_RayQuery_NearestHit(const vec3 rayPos, const vec3 rayDir, fl
     n2    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n2);
     vec3 n3 = DecodeNormal(floatBitsToInt(p3.w));
     n3    = normalize(mat3(transpose(inverse(matrices[instanceIdx]))) * n3);
-    normal = normalize(n1 * bars.x + n2 * bars.y + n3 * (1 - bars.x - bars.y));
+    normal = normalize(n1 * (1 - bars.x - bars.y) + n2 * bars.x + n3 * bars.y);
     vec3 point1 = mat3(transpose(inverse(matrices[instanceIdx]))) * p1.xyz;
     vec3 point2 = mat3(transpose(inverse(matrices[instanceIdx]))) * p2.xyz;
     vec3 point3 = mat3(transpose(inverse(matrices[instanceIdx]))) * p3.xyz;
+    point1 = (matrices[instanceIdx] * vec4(p1.xyz, 1.0)).xyz;
+    point2 = (matrices[instanceIdx] * vec4(p2.xyz, 1.0)).xyz;
+    point3 = (matrices[instanceIdx] * vec4(p3.xyz, 1.0)).xyz;
     area = length(cross(point2 - point1, point3 - point1)) * 0.5;
 
     target = rayPos + rayDir * t;
-    if (dot(normal, rayDir) >= 0.0)
-      return false;
+    target = point1 * (1 - bars.x - bars.y) + point2 * bars.x + point3 * bars.y;
 
     uint materialId = materialIds[startIdxId];
     color = materials[materialId].baseColor.xyz;
     int textureId = materials[materialId].baseColorTexId;
     mat_id = textureId;
+    emission = materials[materialId].emissionColor.xyz;
     if (textureId != -1)
     {
       color = pow(texelFetch(textures[textureId], ivec2(0, 0), textureQueryLevels(textures[textureId]) - 1).rgb, vec3(2.2));
@@ -161,14 +166,19 @@ void main()
   uint startIdxId;
   float area;
   vec3 color;
-  uint matId;
-  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId, area, color, matId))
+  int matId;
+  vec3 emission = vec3(0, 0, 0);
+  if (m_pAccelStruct_RayQuery_NearestHit(point, dir, len, res, normal, startIdxId, area, color, matId, emission))
   {
     float targetLen = length(res - point);
     uint targetIdx = atomicAdd(indirect_buf[indirectOffset + 0], 1) + pointsOffset;
+    uint colorEnc = (uint(color.x * 255) << 16) | (uint(color.y * 255) << 8) | (uint(color.z * 255));
+    float maxEmission = max(max(emission.x, emission.y), max(emission.z, 1.0));
+    emission /= maxEmission;
+    uint emissionEnc = ((uint(emission.x * 255) & 0xFF) << 16) | ((uint(emission.y * 255) & 0xFF) << 8) | (uint(emission.z * 255) & 0xFF);
     out_points[targetIdx * 3] = vec4(res, startIdxId);
     out_points[targetIdx * 3 + 1] = vec4(normal, min(area, 1));
-    out_points[targetIdx * 3 + 2] = vec4(color, matId);
+    out_points[targetIdx * 3 + 2] = vec4(uintBitsToFloat(colorEnc), uintBitsToFloat(emissionEnc), maxEmission, matId);
     atomicAdd(primCounter[startIdxId], 1);
     if (targetIdx == pointsOffset)
     {

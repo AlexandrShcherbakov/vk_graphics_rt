@@ -262,7 +262,8 @@ protected:
   VkBuffer ffTmpRowBuffer = VK_NULL_HANDLE;
   VkDeviceMemory ffTmpRowMem = VK_NULL_HANDLE;
   uint32_t trianglesCount = 0;
-  const float VOXEL_SIZE = 2.5f;//0.125f;
+  //const float VOXEL_SIZE = 2.5f / 4.0;//0.125f;
+  const float VOXEL_SIZE = 2.5f / 1.0;//0.125f;
   LiteMath::uint3 voxelsGrid;
   uint32_t voxelsCount = 0;
   uint32_t clustersCount = 0;

@@ -74,8 +74,10 @@ void main(void)
     vOut.wNorm = vec3(0);
     for (int i = 0; i < indirect_buf[gl_InstanceIndex].x; ++i)
     {
-        vOut.wNorm += points[params.maxPointsPerVoxelCount * gl_InstanceIndex + i].color.xyz
-            * max(dot(normals[side], points[params.maxPointsPerVoxelCount * gl_InstanceIndex + i].normal.xyz), 0);
+        uint color = floatBitsToUint(points[params.maxPointsPerVoxelCount * gl_InstanceIndex + i].color.x);
+        float mult = points[params.maxPointsPerVoxelCount * gl_InstanceIndex + i].color.z;
+        vOut.wNorm += (vec3(uvec3((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF)) / 255.0 * mult)
+            ;//* max(dot(normals[side], points[params.maxPointsPerVoxelCount * gl_InstanceIndex + i].normal.xyz), 0);
     }
     if (indirect_buf[gl_InstanceIndex].x == 0)
     {

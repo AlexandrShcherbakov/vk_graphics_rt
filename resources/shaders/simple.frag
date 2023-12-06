@@ -74,8 +74,8 @@ void main()
     uint voxelIdx = (voxelCoord.x * voxelsExtend.y + voxelCoord.y) * voxelsExtend.z + voxelCoord.z;
     vec3 lightDir1 = normalize(Params.lightPos.xyz - surf.wPos);
     float traceDist = length(Params.lightPos.xyz - surf.wPos);
-    lightDir1 = vec3(0, 0.948773, 0.31596);
-    traceDist = 40.f;
+    // lightDir1 = vec3(0, 0.948773, 0.31596);
+    // traceDist = 40.f;
     vec3 lightDir2 = vec3(0.0f, 0.0f, 1.0f);
 
     const vec4 dark_violet = vec4(0.59f, 0.0f, 0.82f, 1.0f);
@@ -141,12 +141,15 @@ void main()
     }
     if (albedo.a < 0.5)
         discard;
+    bool emission = materials[uint(surf.materialId)].emissionColor.x > 0;
     out_fragColor = vec4(0);
     if ((Params.interpolation & 2) == 2)
         out_fragColor += color_lights;
     if ((Params.interpolation & 4) == 4)
         out_fragColor += vec4(light[0] / weightSum, 1);
-    out_fragColor *= albedo;
+    if (!emission)
+        out_fragColor *= albedo;
+    //out_fragColor.xyz += materials[uint(surf.materialId)].emissionColor;
     if ((Params.interpolation & 8) == 8)
         out_fragColor = postfx(out_fragColor.rgb);
     out_fragColor = pow(out_fragColor, vec4(1 / 2.2));

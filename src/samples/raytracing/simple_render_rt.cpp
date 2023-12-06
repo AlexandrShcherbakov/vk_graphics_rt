@@ -195,6 +195,9 @@ void SimpleRender::TraceGenSamples()
     tmp->CommitScene();
 
     m_pRayTracerGPU->SetScene(tmp);
+    setObjectName(m_pScnMgr->GetInstanceMatBuffer(), "matrices_buffer");
+    setObjectName(m_pScnMgr->GetVertexBuffer(), "vertex_buffer");
+    setObjectName(m_pScnMgr->GetIndexBuffer(), "index_buffer");
     m_pRayTracerGPU->SetVulkanInOutForGenSamples(
       pointsBuffer, indirectPointsBuffer,
       samplePointsBuffer, m_pScnMgr->GetVertexBuffer(), m_pScnMgr->GetIndexBuffer(),

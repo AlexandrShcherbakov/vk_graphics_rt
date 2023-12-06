@@ -198,14 +198,20 @@ uint32_t SceneManager::InstanceMesh(const uint32_t meshId, const LiteMath::float
 {
   assert(meshId < m_meshInfos.size());
 
+  LiteMath::float4x4 matr = matrix;
+  // if (meshId == 41)
+  // {
+  //   matr.col(3).y -= 1.0;
+  // }
+
   //@TODO: maybe move
-  m_instanceMatrices.push_back(matrix);
+  m_instanceMatrices.push_back(matr);
 
   InstanceInfo info;
   info.inst_id       = m_instanceMatrices.size() - 1;
   info.mesh_id       = meshId;
   info.renderMark    = markForRender;
-  info.instBufOffset = (m_instanceMatrices.size() - 1) * sizeof(matrix);
+  info.instBufOffset = (m_instanceMatrices.size() - 1) * sizeof(matr);
 
   m_instanceInfos.push_back(info);
 
@@ -594,7 +600,7 @@ void SceneManager::BuildTLAS()
     auto transform = transformMatrixFromFloat4x4(m_instanceMatrices[inst.inst_id]);
     VkAccelerationStructureInstanceKHR instance{};
     instance.transform = transform;
-    instance.instanceCustomIndex = inst.mesh_id;
+    instance.instanceCustomIndex = (inst.inst_id << 12) | inst.mesh_id;
     instance.mask = 0xFF;
 #ifdef USE_MANY_HIT_SHADERS
     instance.instanceShaderBindingTableRecordOffset = materialMap[inst.mesh_id];

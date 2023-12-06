@@ -460,7 +460,8 @@ void SimpleRender::CreateUniformBuffer()
   voxelsCount = voxelsGrid.x * voxelsGrid.y * voxelsGrid.z;
   maxPointsCount = voxelsCount * 6 * PER_SURFACE_POINTS;
   std::cout << "Voxels count " << voxelsCount << std::endl;
-  visibleVoxelsApproxCount = voxelsCount * 0.6;//0.275f;
+  visibleVoxelsApproxCount = voxelsCount * 0.275f;
+  visibleVoxelsApproxCount = voxelsCount * 0.6f;
   std::cout << "Approximate visible voxels count " << visibleVoxelsApproxCount << std::endl;
 
   {
@@ -546,7 +547,8 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     clustersCount = visibleVoxelsApproxCount * PER_VOXEL_CLUSTERS;
-    approxColumns = visibleVoxelsApproxCount * 0.27;//0.16f;
+    approxColumns = visibleVoxelsApproxCount * 0.03f;
+    approxColumns = visibleVoxelsApproxCount * 0.27f;
     VkMemoryRequirements memReq;
     FFClusteredBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(float) * approxColumns * clustersCount,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &memReq);
@@ -617,7 +619,8 @@ void SimpleRender::CreateUniformBuffer()
 
   {
     VkMemoryRequirements memReq;
-    debugBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(uint) * maxPointsCount, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
+    uint32_t debugLinesCnt = 1000;//maxPointsCount;
+    debugBuffer = vk_utils::createBuffer(m_device, 2 * sizeof(uint) * debugLinesCnt, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &memReq);
     setObjectName(debugBuffer, "debug_lines");
 
     VkMemoryAllocateInfo allocateInfo = {};
@@ -1187,6 +1190,8 @@ void SimpleRender::UpdateView()
     mWorldViewProj = mProjFix * m_projectionMatrix * mLookAt;
   }
   pushConst2M.projView = mWorldViewProj;
+  // std::cout << "Yaw " << atan2(mLookAt[1][0], mLookAt[0][0])  << std::endl;
+  // std::cout << "Pitch " << atan2(-mLookAt[2][0], sqrt(mLookAt[2][1] * mLookAt[2][1] + mLookAt[2][2] * mLookAt[2][2]))  << std::endl;
 
   m_inverseProjViewMatrix = LiteMath::inverse4x4(m_projectionMatrix * transpose(inverse4x4(mLookAt)));
 }

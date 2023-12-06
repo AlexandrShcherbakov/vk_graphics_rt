@@ -29,7 +29,7 @@ void main()
   if (tid >= kgenArgs.clustersCount)
     return;
   float value = tmp_rows[kgenArgs.rowIdx * kgenArgs.clustersCount + tid];
-  if (value > 1e-6f)
+  if (value > 1e-6f * 0.0)
   {
     uint globalOffset = atomicAdd(ff_row_lens[kgenArgs.rowGlobalIdx + 1], 1);
     uint offset = globalOffset - ff_row_lens[kgenArgs.rowGlobalIdx];
